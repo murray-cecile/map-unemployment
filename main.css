@@ -1,0 +1,56 @@
+body{align-items:center;display:flex;flex-direction:column}
+
+.dot {
+    r: 4;
+  }
+
+  .dot.black {
+    fill: #17E849;
+  }
+
+  .dot.white {
+    fill: #217FBE;
+  }
+
+  .dot.unemp_all {
+    fill: white;
+  }
+
+  .title {
+    font-family: 'Cabin';
+    font-size:large;
+  }
+
+  .title.subtitle {
+    font-size:medium;
+    font-style:italic;
+  }
+
+  .text {
+    font-family: 'Cabin';
+  }
+
+  .text.legend {
+    font-size:medium;
+  }
+  
+  .text.caption {
+    font-size: smaller;
+    font-style: italic;
+  }
+
+  .text.axis {
+    font-size:smaller;
+  }
+
+  .rect.legend.black {
+    height: 15;
+    width: 15;
+    fill: #17E849;
+  }
+
+  .rect.legend.white {
+    height: 15;
+    width: 15;
+    fill: #217FBE;
+  }

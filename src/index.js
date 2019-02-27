@@ -5,7 +5,7 @@ const domReady = require('domready');
 
 domReady(() => {
   // this is just one example of how to import data. there are lots of ways to do it!
-  fetch('./data/example.json')
+  fetch('/Users/cecilemurray/Documents/CAPP/data-viz/map-unemployment/app/data/us_counties.json')
     .then(response => response.json())
     .then(data => myVis(data));
 
@@ -14,7 +14,7 @@ domReady(() => {
 function myVis(data) {
   // portrait
   const width = 5000;
-  const height = 36 / 24 * width;
+  const height = 8000;
   console.log(data)
   console.log('Hi!')
   // EXAMPLE FIRST FUNCTION
