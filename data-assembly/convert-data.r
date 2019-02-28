@@ -13,6 +13,8 @@ blskey <- Sys.getenv("BLS_KEY")
 HERE <- "/Users/cecilemurray/Documents/CAPP/data-viz/jobs"
 THERE <- "/Users/cecilemurray/Documents/CAPP/data-viz/map-unemployment/app/data"
 
+setwd(HERE)
+
 #===============================================================================#
 # COUNTY POPULATION
 #===============================================================================#
@@ -22,9 +24,12 @@ ctpop <- get_acs(geography = "county", variable = "B01001_001",
   dplyr::rename(stcofips = GEOID, pop = estimate) %>% 
   filter(!stcofips %in% c("72")) %>% select(-moe) 
 
+ohpop <- ctpop %>% filter(substr(stcofips, 1, 2) == "39")
+
 setwd(THERE)
 ctpop %>% select(stcofips, pop) %>% st_drop_geometry() %>% 
   write_json("county-population-2017.json")
+ohpop %>% sf::write_sf('ohio-2017.geojson')
 setwd(HERE)
 
 #===============================================================================#

@@ -1,12 +1,13 @@
+// CECILE MURRAY
 
-d3.json('app/data/us_counties.geojson')
-  .catch(function(error, data) {
-    console.log(error);
-  }) 
-  .then(function(data) {
-    makeMap(data);
-  });
+// DATA LOADING
+Promise.all([
+  'app/data/unprojohio.geojson',
+  'app/data/ohio-pop.json'
+].map(url => fetch(url).then(data => data.json())))
+  .then(data => makeMap(data));
 
+// handy fn to compute domain
 function computeDomain(data, key) {
   return data.reduce((acc, row) => {
     return {
@@ -16,52 +17,40 @@ function computeDomain(data, key) {
   }, {min: Infinity, max: -Infinity});
 }
 
+// MAP!
 function makeMap(data) {
-  // this is an es6ism called a destructuring, it allows you to save and name argument
-  // you tend to see it for stuff in object, (as opposed to arrays), but this is cool too
-  // const [stateShapes, statePops] = data;
-  const width = 1000;
-  const height = 800;
+
+  const width = 800;
+  const height = 600;
   const margin = {
-    top: 10,
-    left: 10,
-    right: 10,
+    top: 20,
+    left: 20,
+    right: 20,
     bottom: 10
   };
 
-  svg = d3.select('.first').append('svg')
+  svg = d3.select('body').append('svg')
           .attr('width', margin.left + width + margin.right)
           .attr('height', margin.top + height + margin.bottom);
+
+  const [shp, pop] = data;
   
-  path = d3.geoPath().projection(d3.geoAlbersUsa());
+  geoGenerator = d3.geoPath().projection(d3.geoAlbersUsa());
 
-  console.log(data.features);
-
+  const popDomain = computeDomain(pop, 'pop');
+  const fips2Pop = pop.reduce((acc, row) => {
+    acc[row.stcofips] = row.pop;
+    return acc;
+  }, {});
+  console.log(fips2Pop);
+  
   svg.selectAll('path')
-    .data(data.features)
+    .data(shp.features)
     .enter()
     .append('path')
-    .attr('d', path);
-  // we're going to be coloring our cells based on their population so we should compute the
-  // population domain
-  // const popDomain = computeDomain(statePops, 'pop');
-  // // the data that we will be iterating over will be the geojson array of states, so we want to be
-  // // able to access the populations of all of the states. to do so we flip it to a object representation
-  // const stateNameToPop = statePops.reduce((acc, row) => {
-  //   acc[row.state] = row.pop;
-  //   return acc;
-  // }, {});
-  // YOUR COLOR SCALE HERE
-  //
-  //
-  //
-  // next we set up our projection stuff
-  // const projection = geoAlbersUsa();
-  // const geoGenerator = geoPath(projection);
-  // then our container as usual
-  // YOUR SVG CONTAINER CODE HERE
-
-  // finally we construct our rendered states
-  // YOUR JOIN AND ENTER HERE
+    .attr('d', d => geoGenerator(d))
+    .attr('stroke', 'yellow')
+    .attr('fill', d => fips2Pop[d.stcofips]);
 
 };
+
