@@ -115,12 +115,20 @@ function makeIndustryBar(natl_industry, which_bar) {
           .attr('width', margin.left + width + margin.right)
           .attr('height', margin.top + height + margin.bottom);
   
-  const colorScale = d => d3.interpolateViridis(popScale(d));
   
-  svg.selectAll('bar1')
+  const xScale = d3.scaleLinear()
+                   .domain(Object.keys(natl_industry))
+                   .range([margin.left, width]);
+  const yScale = d3.scaleLinear()
+                   .domain(computeDomain(natl_industry, 'industry'))
+                   .range([margin.top, height]);
+  
+  svg.selectAll('rect')
     .data(natl_industry)
     .enter()
-    .append('rect');
+    .append('rect')
+    .attr('x', d => xScale(d.industry))
+    .attr('y', d => yScale(d.emp));
 
 };
 
