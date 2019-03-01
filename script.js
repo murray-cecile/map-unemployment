@@ -2,8 +2,8 @@
 
 // DATA LOADING
 Promise.all([
-  'app/data/unprojohio.geojson',
-  'app/data/ohio-pop.json'].map(url => fetch(url)
+  'data/unprojohio.geojson',
+  'data/ohio-pop.json'].map(url => fetch(url)
   .then(data => data.json())))
   .then(data => makeCharts(data));
 
@@ -14,6 +14,8 @@ function makeCharts(data) {
 
   makeRug(pop);
   makeMap(shp, pop);
+  // makeIndustryBar(natl_industry);
+  // makeIndustryBar(cty_industry);
 }
 
 // handy fn to compute domain
@@ -99,7 +101,7 @@ function makeMap(shp, pop) {
 
 };
 
-function makeNatlBar(natl_industry) {
+function makeIndustryBar(natl_industry, which_bar) {
   const width = 400;
   const height = 400;
   const margin = {
@@ -109,7 +111,7 @@ function makeNatlBar(natl_industry) {
     bottom: 10
   };
 
-  svg = d3.select('#chart1').append('svg')
+  svg = d3.select(which_bar).append('svg')
           .attr('width', margin.left + width + margin.right)
           .attr('height', margin.top + height + margin.bottom);
   
@@ -121,3 +123,4 @@ function makeNatlBar(natl_industry) {
     .append('rect');
 
 };
+
