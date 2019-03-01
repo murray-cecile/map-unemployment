@@ -29,7 +29,7 @@ ohpop <- ctpop %>% filter(substr(stcofips, 1, 2) == "39")
 setwd(THERE)
 ctpop %>% select(stcofips, pop) %>% st_drop_geometry() %>% 
   write_json("county-population-2017.json")
-ohpop %>% sf::write_sf('ohio-2017.geojson')
+ohpop %>% st_drop_geometry() %>% write_json('ohio-pop.json')
 setwd(HERE)
 
 #===============================================================================#
