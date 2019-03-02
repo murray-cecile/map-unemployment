@@ -3,18 +3,21 @@
 // DATA LOADING
 Promise.all([
   'data/unprojohio.geojson',
-  'data/ohio-pop.json'].map(url => fetch(url)
+  'data/ohio-pop.json',
+  'data/national_industry_shares_07-18.json'].map(url => fetch(url)
   .then(data => data.json())))
   .then(data => makeCharts(data));
 
 
 function makeCharts(data) {
 
-  const [shp, pop] = data;
+  const [shp, pop, natl_industry] = data;
+
+  console.log(natl_industry);
 
   makeRug(pop);
   makeMap(shp, pop);
-  // makeIndustryBar(natl_industry);
+  makeIndustryBar(natl_industry, '#bar1');
   // makeIndustryBar(cty_industry);
 }
 
@@ -101,7 +104,7 @@ function makeMap(shp, pop) {
 
 };
 
-function makeIndustryBar(natl_industry, which_bar) {
+function makeIndustryBar(industry_data, which_bar) {
   const width = 400;
   const height = 400;
   const margin = {
@@ -115,20 +118,24 @@ function makeIndustryBar(natl_industry, which_bar) {
           .attr('width', margin.left + width + margin.right)
           .attr('height', margin.top + height + margin.bottom);
   
+  const industries = [ ... new Set(industry_data.map(x => x.industry_name))]; // https://codeburst.io/javascript-array-distinct-5edc93501dc4
+  console.log(industries);
   
-  const xScale = d3.scaleLinear()
-                   .domain(Object.keys(natl_industry))
+  const xScale = d3.scaleBand()
+                   .domain(industries)
                    .range([margin.left, width]);
   const yScale = d3.scaleLinear()
-                   .domain(computeDomain(natl_industry, 'industry'))
+                   .domain([0, d3.max(industry_data, d => d.industry_share)])
                    .range([margin.top, height]);
   
   svg.selectAll('rect')
-    .data(natl_industry)
+    .data(industry_data)
     .enter()
     .append('rect')
-    .attr('x', d => xScale(d.industry))
-    .attr('y', d => yScale(d.emp));
+    .attr('x', d => xScale(d.industry_name))
+    .attr('y', d => yScale(d.industry_share))
+    .attr('width', xScale.bandwidth())
+    .attr('height', d => yScale(d.industry_share));
 
 };
 
