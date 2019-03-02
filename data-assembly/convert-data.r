@@ -9,7 +9,6 @@ libs <- c("here", "tidyverse", "magrittr", "sf", "tidycensus", "jsonlite",
 lapply(libs, library, character.only = TRUE)
 
 blskey <- Sys.getenv("BLS_KEY")
-# censuskey <- Sys.getenv("CENSUS_KEY")
 
 HERE <- "/Users/cecilemurray/Documents/CAPP/data-viz/jobs"
 THERE <- "/Users/cecilemurray/Documents/CAPP/data-viz/map-unemployment/data"

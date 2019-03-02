@@ -61,6 +61,8 @@ function makeRug(pop) {
     .append('rect')
     .attr('x', d => xScale(d.pop))
     .attr('y', yScale(0.5))
+    .attr('width', 2)
+    .attr('height', 50)
     .attr('class', 'rect rug');                 
 };
 
@@ -134,7 +136,8 @@ function makeIndustryBar(industry_data, which_bar) {
     .attr('x', d => xScale(d.industry_name))
     .attr('y', d => yScale(d.industry_share))
     .attr('width', xScale.bandwidth())
-    .attr('height', d => yScale(d.industry_share));
+    .attr('height', d => yScale(d.industry_share))
+    .attr('fill', "#217FBE");
 
 };
 

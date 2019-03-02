@@ -31,13 +31,16 @@ body{align-items:left;display:flex;flex-direction:column}
 
  /* RUG CHARTS */
 
-  .rect.rug {
-    height: 50;
-    width: 2;
+  rect.rug {
     fill: #217FBE;
   }
 
-  .rect.rug.highlight {
-    width: 3;
+  rect.rug.highlight {
     fill: #17E849;
+  }
+
+  /* BAR CHARTS */
+
+  rect.bar1 {
+    fill: #217FBE;
   }
