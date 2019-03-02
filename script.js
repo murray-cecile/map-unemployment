@@ -61,8 +61,7 @@ function makeRug(pop) {
     .append('rect')
     .attr('x', d => xScale(d.pop))
     .attr('y', yScale(0.5))
-    .attr('width', 2)
-    .attr('height', 50);                 
+    .attr('class', 'rect rug');                 
 };
 
 // MAP!
@@ -126,7 +125,7 @@ function makeIndustryBar(industry_data, which_bar) {
                    .range([margin.left, width]);
   const yScale = d3.scaleLinear()
                    .domain([0, d3.max(industry_data, d => d.industry_share)])
-                   .range([margin.top, height]);
+                   .range([height, margin.top]);
   
   svg.selectAll('rect')
     .data(industry_data)

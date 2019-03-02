@@ -22,7 +22,6 @@ write_json_there <- function(df, filename){
   setwd(HERE)
 }
 
-
 #===============================================================================#
 # COUNTY POPULATION
 #===============================================================================#
@@ -34,11 +33,9 @@ ctpop <- get_acs(geography = "county", variable = "B01001_001",
 
 ohpop <- ctpop %>% filter(substr(stcofips, 1, 2) == "39")
 
-setwd(THERE)
 ctpop %>% select(stcofips, pop) %>% st_drop_geometry() %>% 
-  write_json("county-population-2017.json")
-ohpop %>% st_drop_geometry() %>% write_json('ohio-pop.json')
-setwd(HERE)
+  write_json_there("county-population-2017.json")
+ohpop %>% st_drop_geometry() %>% write_json_there('ohio-pop.json')
 
 #===============================================================================#
 # SMOOTHED COUNTY UNEMPLOYMENT
@@ -71,10 +68,8 @@ adj_cturate <- cturate %>% filter(period != "M13", year < 2019) %>%
   left_join(adj_factor, by = "period") %>% 
   mutate(adj_urate = urate - month_adj) 
 
-setwd(THERE)
 adj_cturate %>% select(year, period, periodName, stfips, stcofips, adj_urate) %>% 
-  write_json("adj-county-urate_2007-2018.json")
-setwd(HERE)
+  write_json_there("adj-county-urate_2007-2018.json")
 
 #===============================================================================#
 # NATIONAL EMPLOYMENT BY INDUSTRY
@@ -83,9 +78,6 @@ setwd(HERE)
 # pull list of all NAICS codes
 industries <- fread("https://download.bls.gov/pub/time.series/ce/ce.industry") %>% 
   mutate(industry_code = str_pad(industry_code, 8, side = "left", pad = "0"))
-
-supersectors <- c("Goods-producing", "Service-providing",
-                  "Private service-providing", "Total private")
 
 industry_list <- c("Mining and logging", "Construction", "Manufacturing",
                    "Retail trade", "Wholesale Trade", "Utilities",
@@ -109,6 +101,44 @@ industry_shares <- naics2_data %>%
   select(year, month, industry_name, value) %>% 
   mutate(tot_nonfarm = ifelse(industry_name == "Total nonfarm", value, NA)) %>% 
   arrange(month) %>% fill(tot_nonfarm) %>% 
-  mutate(industry_share = value / tot_nonfarm) %>% 
-  write_json_there("national_industry_shares_07-18.json")
+  mutate(industry_share = value / tot_nonfarm) 
+industry_shares %>%   write_json_there("national_industry_shares_07-18.json")
+
+#===============================================================================#
+# QCEW API
+#===============================================================================#
+
+qcew_naics <- blscrapeR::niacs %>%
+  filter(substr(industry_title, 1, 7) != "NAICS07") %>%
+  mutate(industry_title = str_remove(industry_title, "NAICS"),
+         industry_title = str_remove(industry_title, regex("[[:digit:]]+")),
+         industry_title = str_remove(industry_title, regex("-[[:digit:]]+")),
+         name = tolower(industry_title)) %>% 
+  filter(name %in% tolower(industry_list) |
+           industry_code == c("48-49", "1011") |
+         industry_title == "Total, all industries") %>% 
+  select(-name)
+
+dat <- Map(function(x, y) qcew_api(year = x,
+                                   qtr = 'A',
+                                   slice = "industry",
+                                   sliceCode = y),
+           rep(seq(2012, 2017), nrow(qcew_naics)),
+           qcew_naics$industry_code) %>% 
+  bind_rows() %>% 
+  filter(own_code == 5,
+         size_code == 0,
+         as.numeric(substr(area_fips, 1, 2)) < 57,
+         as.numeric(substr(area_fips, 3, 5) != "000"))
+
+qcew <- dat %>% select(area_fips, industry_code, year,
+                       annual_avg_emplvl, annual_avg_wkly_wage) %>% 
+  dplyr::rename(stcofips = area_fips) %>% 
+  mutate(industry_code = as.character(industry_code))
+qcew %<>% mutate(industry_code = as.character(industry_code)) %>% 
+  left_join(qcew_naics, by="industry_code") %>% 
+  mutate(totemp = ifelse(industry_code == "10", annual_avg_emplvl, NA)) %>% 
+  fill(totemp) %>% 
+  mutate()
+  
 

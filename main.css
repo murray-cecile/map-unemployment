@@ -1,20 +1,6 @@
-body{align-items:center;display:flex;flex-direction:column}
+body{align-items:left;display:flex;flex-direction:column}
 
-.dot {
-    r: 4;
-  }
-
-  .dot.black {
-    fill: #17E849;
-  }
-
-  .dot.white {
-    fill: #217FBE;
-  }
-
-  .dot.unemp_all {
-    fill: white;
-  }
+/* TEXT */
 
   .title {
     font-family: 'Cabin';
@@ -43,14 +29,15 @@ body{align-items:center;display:flex;flex-direction:column}
     font-size:smaller;
   }
 
-  .rect.legend.black {
-    height: 15;
-    width: 15;
-    fill: #17E849;
+ /* RUG CHARTS */
+
+  .rect.rug {
+    height: 50;
+    width: 2;
+    fill: #217FBE;
   }
 
-  .rect.legend.white {
-    height: 15;
-    width: 15;
-    fill: #217FBE;
+  .rect.rug.highlight {
+    width: 3;
+    fill: #17E849;
   }
