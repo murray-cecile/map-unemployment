@@ -1,13 +1,19 @@
-body {
-  align-items:center;
-  display:flex;
-  flex-direction:column;
-  font-family: "Cabin";
-}
+  body {
+    align-items:center;
+    display:flex;
+    flex-direction:column;
+    font-family: "Cabin";
+  }
 
-div #focus {
-  align-items:left;
-}
+  .focus {
+    align-items:left;
+    flex-direction: row;
+  }
+
+  .bars  {
+    display: flex;
+    flex-wrap: wrap;
+  }
 
 /* TEXT */
 
@@ -36,9 +42,9 @@ div #focus {
 
  /* RUG CHARTS */
 
-  rect.rug {
+  /* rect.rug {
     fill: #217FBE;
-  }
+  } */
 
   rect.rug.highlight {
     fill: #17E849;

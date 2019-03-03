@@ -132,6 +132,7 @@ qcew_naics <- blscrapeR::niacs %>%
 #          as.numeric(substr(area_fips, 3, 5) != "000"))
 
 # save(dat, file = "temp/qcew_dat.Rdata")
+load("temp/qcew_dat.Rdata")
 
 qcew <- dat %>% select(area_fips, industry_code, year,
                        annual_avg_emplvl, annual_avg_wkly_wage) %>% 
@@ -141,9 +142,9 @@ qcew <- dat %>% select(area_fips, industry_code, year,
   left_join(qcew_naics, by="industry_code") %>% 
   mutate(totemp = ifelse(industry_code == "10", annual_avg_emplvl, NA)) %>% 
   arrange(year, stcofips) %>% fill(totemp) %>% 
-  mutate(industry_share = annual_avg_emplvl / totemp) %>% 
+  mutate(industry_share = ifelse(totemp > 0, annual_avg_emplvl / totemp, 0)) %>% 
   dplyr::rename(industry_name = industry_title)
 
-qcew  %>% filter(industry_code != 10, year == 2017, substr(stcofips, 1, 2) == "39") %>% 
+qcew %>% filter(industry_code != 10, year == 2017, substr(stcofips, 1, 2) == "39") %>% 
   write_json_there("qcew-oh17.json")
 
