@@ -19,6 +19,6 @@ rm cb_*
 
 ogr2ogr -f GeoJSON us_counties.geojson us_counties.shp
 
-rm *.shx *.shp *.dbf *.prj
-
 ogr2ogr -f GeoJSON unprojohio.geojson  cb_2017_us_county_500k.shp  -sql "select * from cb_2017_us_county_500k where STATEFP = '39'" -overwrite
+
+rm *.shx *.shp *.dbf *.prj *.xml

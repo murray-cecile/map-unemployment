@@ -2,23 +2,24 @@
 
 // DATA LOADING
 Promise.all([
-  'data/unprojohio.geojson',
-  'data/ohio-pop.json',
-  'data/national_industry_shares_07-18.json'].map(url => fetch(url)
+  'data/us_counties.geojson',
+  'data/adj-urate-2017.json',
+  'data/national_industry_shares_07-18.json',
+  'data/qcew-oh17.json'].map(url => fetch(url)
   .then(data => data.json())))
   .then(data => makeCharts(data));
 
 
 function makeCharts(data) {
 
-  const [shp, pop, natl_industry] = data;
+  const [shp, urates, natl_industry, cty_industry] = data;
 
-  console.log(natl_industry);
+  console.log(cty_industry);
 
-  makeRug(pop);
-  makeMap(shp, pop);
+  makeRug(urates);
+  makeMap(shp, urates);
   makeIndustryBar(natl_industry, '#bar1');
-  // makeIndustryBar(cty_industry);
+  makeIndustryBar(cty_industry, '#bar2');
 }
 
 // handy fn to compute domain
@@ -32,7 +33,7 @@ function computeDomain(data, key) {
 }
 
 // RUG
-function makeRug(pop) {
+function makeRug(urates) {
 
   const width = 800;
   const height = 75;
@@ -40,7 +41,7 @@ function makeRug(pop) {
     top: 10,
     left: 20,
     right: 20,
-    bottom: 5
+    bottom: 10
   };
 
   svg = d3.select('#rug').append('svg')
@@ -48,28 +49,30 @@ function makeRug(pop) {
           .attr('height', margin.top + height + margin.bottom);
   
   const xScale = d3.scaleLinear()
-                   .domain([0, d3.max(pop, p => p.pop)])
+                   .domain([0, d3.max(urates, p => p.adj_urate)])
                    .range([margin.left, width]);
   
   const yScale = d3.scaleLinear()
                    .domain([0, 1])
                    .range([0, height]);
   
+  const colorScale = d => d3.interpolateViridis(xScale(d));
+
   svg.selectAll('rect')
-    .data(pop)
+    .data(urates)
     .enter()
     .append('rect')
-    .attr('x', d => xScale(d.pop))
+    .attr('x', d => xScale(d.adj_urate))
     .attr('y', yScale(0.5))
     .attr('width', 2)
-    .attr('height', 50)
-    .attr('class', 'rect rug');                 
+    .attr('height', 40)
+    .attr('fill', d => colorScale(d.adj_urate));                 
 };
 
 // MAP!
-function makeMap(shp, pop) {
+function makeMap(shp, urates) {
 
-  const width = 800;
+  const width = 900;
   const height = 600;
   const margin = {
     top: 20,
@@ -84,13 +87,13 @@ function makeMap(shp, pop) {
   
   geoGenerator = d3.geoPath().projection(d3.geoAlbersUsa());
 
-  const fips2Pop = pop.reduce((acc, row) => {
-    acc[row.stcofips] = row.pop;
+  const fips2Value = urates.reduce((acc, row) => {
+    acc[row.stcofips] = row.adj_urate;
     return acc;
   }, {});
 
   const popScale = d3.scaleLinear()
-                    .domain([0, d3.max(pop, p => p.pop)])
+                    .domain([0, d3.max(urates, p => p.adj_urate)])
                     .range([0, 1]);
 
   const colorScale = d => d3.interpolateViridis(popScale(d));
@@ -100,8 +103,7 @@ function makeMap(shp, pop) {
     .enter()
     .append('path')
     .attr('d', d => geoGenerator(d))
-    .attr('stroke', 'white')
-    .attr('fill', d => colorScale(fips2Pop[d.properties.GEOID]));
+    .attr('fill', d => colorScale(fips2Value[d.properties.GEOID]));
 
 };
 
@@ -120,7 +122,6 @@ function makeIndustryBar(industry_data, which_bar) {
           .attr('height', margin.top + height + margin.bottom);
   
   const industries = [ ... new Set(industry_data.map(x => x.industry_name))]; // https://codeburst.io/javascript-array-distinct-5edc93501dc4
-  console.log(industries);
   
   const xScale = d3.scaleBand()
                    .domain(industries)

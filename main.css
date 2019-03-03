@@ -1,4 +1,13 @@
-body{align-items:left;display:flex;flex-direction:column}
+body {
+  align-items:center;
+  display:flex;
+  flex-direction:column;
+  font-family: "Cabin";
+}
+
+div #focus {
+  align-items:left;
+}
 
 /* TEXT */
 
@@ -10,10 +19,6 @@ body{align-items:left;display:flex;flex-direction:column}
   .title.subtitle {
     font-size:medium;
     font-style:italic;
-  }
-
-  .text {
-    font-family: 'Cabin';
   }
 
   .text.legend {

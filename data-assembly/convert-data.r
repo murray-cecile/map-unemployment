@@ -13,8 +13,6 @@ blskey <- Sys.getenv("BLS_KEY")
 HERE <- "/Users/cecilemurray/Documents/CAPP/data-viz/jobs"
 THERE <- "/Users/cecilemurray/Documents/CAPP/data-viz/map-unemployment/data"
 
-setwd(HERE)
-
 write_json_there <- function(df, filename){
   setwd(THERE)
   df %>% write_json(filename)
@@ -30,11 +28,8 @@ ctpop <- get_acs(geography = "county", variable = "B01001_001",
   dplyr::rename(stcofips = GEOID, pop = estimate) %>% 
   filter(!stcofips %in% c("72")) %>% select(-moe) 
 
-ohpop <- ctpop %>% filter(substr(stcofips, 1, 2) == "39")
-
 ctpop %>% select(stcofips, pop) %>% st_drop_geometry() %>% 
   write_json_there("county-population-2017.json")
-ohpop %>% st_drop_geometry() %>% write_json_there('ohio-pop.json')
 
 #===============================================================================#
 # SMOOTHED COUNTY UNEMPLOYMENT
@@ -52,23 +47,26 @@ cturate <- mutate(cturate_data, stfips = substr(series_id, 6, 7),
                     period %in% c("M07", "M08", "M09") ~ paste0(year, "-", "Q3"),
                     period %in% c("M10", "M11", "M12") ~ paste0(year, "-", "Q4")
                   )) %>% 
-  dplyr::rename(urate = value) %>%  group_by(stcofips) %>% 
-  mutate(max_urate = max(urate), is_max = ifelse(urate == max_urate, 1, 0))
+  dplyr::rename(urate = value) 
 
-annual <- cturate %>% filter(period == "M13") %>% dplyr::rename(ann_urate = urate) %>% 
+annual <- cturate %>% filter(period == "M13") %>%
+  dplyr::rename(ann_urate = urate) %>% 
   select(year, stcofips, ann_urate)
 
-adj_factor <- cturate %>% filter(period != "M13", year < 2019) %>% 
+adj_factor <- cturate %>% filter(period != "M13", year < 2018) %>% 
   left_join(annual, by = c("stcofips", "year")) %>% 
   mutate(ann_delta = urate - ann_urate) %>% 
   group_by(period) %>% summarize(month_adj = mean(ann_delta))
 
-adj_cturate <- cturate %>% filter(period != "M13", year < 2019) %>% 
+adj_cturate <- cturate %>% filter(period != "M13", year < 2018) %>% 
   left_join(adj_factor, by = "period") %>% 
   mutate(adj_urate = urate - month_adj) 
 
 adj_cturate %>% select(year, period, periodName, stfips, stcofips, adj_urate) %>% 
   write_json_there("adj-county-urate_2007-2018.json")
+
+adj_cturate %>% select(year, period, periodName, stfips, stcofips, adj_urate) %>% 
+  filter(year == 2017) %>% write_json_there("adj-urate-2017.json")
 
 #===============================================================================#
 # NATIONAL EMPLOYMENT BY INDUSTRY
@@ -101,7 +99,9 @@ industry_shares <- naics2_data %>%
   mutate(tot_nonfarm = ifelse(industry_name == "Total nonfarm", value, NA)) %>% 
   arrange(month) %>% fill(tot_nonfarm) %>% 
   mutate(industry_share = value / tot_nonfarm) 
-industry_shares %>%   write_json_there("national_industry_shares_07-18.json")
+
+industry_shares %>% filter(industry_name != "Total nonfarm") %>% 
+  write_json_there("national_industry_shares_07-18.json")
 
 #===============================================================================#
 # QCEW API
@@ -114,30 +114,36 @@ qcew_naics <- blscrapeR::niacs %>%
          industry_title = str_remove(industry_title, regex("-[[:digit:]]+")),
          name = tolower(industry_title)) %>% 
   filter(name %in% tolower(industry_list) |
-           industry_code == c("48-49", "1011") |
+           industry_code == c("1011") | # missing "48-49",
          industry_title == "Total, all industries") %>% 
   select(-name)
 
-dat <- Map(function(x, y) qcew_api(year = x,
-                                   qtr = 'A',
-                                   slice = "industry",
-                                   sliceCode = y),
-           rep(seq(2012, 2017), nrow(qcew_naics)),
-           qcew_naics$industry_code) %>% 
-  bind_rows() %>% 
-  filter(own_code == 5,
-         size_code == 0,
-         as.numeric(substr(area_fips, 1, 2)) < 57,
-         as.numeric(substr(area_fips, 3, 5) != "000"))
+# run once and saved for speed
+# dat <- Map(function(x, y) qcew_api(year = x,
+#                                    qtr = 'A',
+#                                    slice = "industry",
+#                                    sliceCode = y),
+#            rep(seq(2015, 2017), nrow(qcew_naics)),
+#            qcew_naics$industry_code) %>% 
+#   bind_rows() %>% 
+#   filter(own_code == 5,
+#          size_code == 0,
+#          as.numeric(substr(area_fips, 1, 2)) < 57,
+#          as.numeric(substr(area_fips, 3, 5) != "000"))
+
+# save(dat, file = "temp/qcew_dat.Rdata")
 
 qcew <- dat %>% select(area_fips, industry_code, year,
                        annual_avg_emplvl, annual_avg_wkly_wage) %>% 
   dplyr::rename(stcofips = area_fips) %>% 
-  mutate(industry_code = as.character(industry_code))
-qcew %<>% mutate(industry_code = as.character(industry_code)) %>% 
+  mutate(industry_code = as.character(industry_code)) %>% 
+  mutate(industry_code = as.character(industry_code)) %>% 
   left_join(qcew_naics, by="industry_code") %>% 
   mutate(totemp = ifelse(industry_code == "10", annual_avg_emplvl, NA)) %>% 
-  fill(totemp) %>% 
-  mutate()
-  
+  arrange(year, stcofips) %>% fill(totemp) %>% 
+  mutate(industry_share = annual_avg_emplvl / totemp) %>% 
+  dplyr::rename(industry_name = industry_title)
+
+qcew  %>% filter(industry_code != 10, year == 2017, substr(stcofips, 1, 2) == "39") %>% 
+  write_json_there("qcew-oh17.json")
 
