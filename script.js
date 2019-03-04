@@ -292,11 +292,10 @@ app = {
 
 // DATA LOADING
 Promise.all([
-  'data/us_counties.geojson',
-  'data/adj-urate-2017.json',
-  'data/national_industry_shares_07-18.json',
-  'data/qcew-oh17.json'].map(url => fetch(url)
+  './data/us_counties.geojson',
+  './data/adj-urate-2017.json',
+  './data/national_industry_shares_07-18.json',
+  './data/qcew-oh17.json'].map(url => fetch(url)
   .then(data => data.json())))
-  // .then(data => makeCharts(data));
   .then(data => app.initialize(data));
 
