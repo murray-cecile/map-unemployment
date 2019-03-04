@@ -5,14 +5,16 @@
     font-family: "Cabin";
   }
 
-  .focus {
-    align-items:left;
-    flex-direction: row;
+  .map-container {
+    display:flex;
+    max-width: 1000px;
+    flex-wrap:wrap;
   }
 
   .bars  {
-    display: flex;
-    flex-wrap: wrap;
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
   }
 
 /* TEXT */
@@ -55,3 +57,16 @@
   rect.bar1 {
     fill: #217FBE;
   }
+
+  /* MAP */
+
+  .highlight {
+    fill:#FFD816;
+  }
+
+
+/* lt_blue <- "#217FBE"
+lt_orange <- "#FFA220"
+lt_pink <- "#E817A9"
+lt_yellow <- "#FFD816"
+lt_green <- "#17E849" */
