@@ -14,93 +14,115 @@ function computeDomain(data, key) {
   }, {min: Infinity, max: -Infinity});
 }
 
-// RUG
-function makeRug(urates) {
+main = {
 
-  const width = 75;
-  const height = 600;
-  const margin = {
-    top: 10,
-    left: 10,
-    right: 10,
-    bottom: 10
-  };
-
-  svg = d3.select('#rug').append('svg')
-          .attr('width', margin.left + width + margin.right)
-          .attr('height', margin.top + height + margin.bottom);
-  
-  const yScale = d3.scaleLinear()
-                   .domain([0, d3.max(urates, p => p.adj_urate)])
-                   .range([height, margin.bottom]);
-  
-  const xScale = d3.scaleLinear()
-                   .domain([0, 1])
-                   .range([0, width]);
-  
-  const urateScale = d3.scaleLinear()
-                    .domain([0, d3.max(urates, p => p.adj_urate)])
-                    .range([0, 1]);
-
-  const colorScale = d => d3.interpolateViridis(urateScale(d));
-
-  svg.selectAll('rect')
-    .data(urates)
-    .enter()
-    .append('rect')
-    .attr('x', xScale(0.5))
-    .attr('y', d => yScale(d.adj_urate))
-    .attr('width', 40)
-    .attr('height', 0.5)
-    .attr('fill', d => colorScale(d.adj_urate));                 
-};
-
-// MAP
-function makeMap(shp, urates) {
-
-  const width = 850;
-  const height = 600;
-  const margin = {
-    top: 20,
-    left: 20,
-    right: 20,
-    bottom: 10
-  };
-
-  svg = d3.select('#map').append('svg')
-          .attr('width', margin.left + width + margin.right)
-          .attr('height', margin.top + height + margin.bottom);
-  
-  geoGenerator = d3.geoPath().projection(d3.geoAlbersUsa());
-
-  const fips2Value = urates.reduce((acc, row) => {
-    acc[row.stcofips] = row.adj_urate;
-    return acc;
-  }, {});
-
-  const urateScale = d3.scaleLinear()
-                    .domain([0, d3.max(urates, p => p.adj_urate)])
-                    .range([0, 1]);
-
-  const colorScale = d => d3.interpolateViridis(urateScale(d));
-  
-
-  function mouseOverHandler(d) {
+  mouseOverHandler: function (d) {
     d3.select(this).attr('fill', "#FFD816");
-  };
+    current = this.id.split('-')[1];
+    console.log(current);
+    if(this.id.split('-')[0] == 'ctypath') {
+      d3.select('#rug-' + current).attr('fill', "#FFD816");
+      console.log('#rug ' + current);
+    } else {
+      d3.select('#ctypath-' + current).attr('fill', "#FFD816");
+    }
+  },
 
-  function mouseOutHandler(d) {
-    d3.select(this).attr("fill", d => colorScale(fips2Value[d.properties.GEOID]));
-  };
+  // RUG
+  makeRug: function (urates, fips2Value) {
 
-  svg.selectAll('path')
-    .data(shp.features)
-    .enter()
-    .append('path')
-    .attr('d', d => geoGenerator(d))
-    .attr('fill', d => colorScale(fips2Value[d.properties.GEOID]))
-    .on("mouseover", mouseOverHandler)
-    .on("mouseout", mouseOutHandler);
+    const width = 75;
+    const height = 600;
+    const margin = {
+      top: 10,
+      left: 10,
+      right: 10,
+      bottom: 10
+    };
+
+    svg = d3.select('#rug').append('svg')
+            .attr('width', margin.left + width + margin.right)
+            .attr('height', margin.top + height + margin.bottom);
+    
+    const yScale = d3.scaleLinear()
+                    .domain([0, d3.max(urates, p => p.adj_urate)])
+                    .range([height, margin.bottom]);
+    
+    const xScale = d3.scaleLinear()
+                    .domain([0, 1])
+                    .range([0, width]);
+  
+    const urateScale = d3.scaleLinear()
+                        .domain([0, d3.max(urates, p => p.adj_urate)])
+                        .range([0, 1]);
+
+    const colorScale = d => d3.interpolateViridis(urateScale(d));
+
+    function mouseOutHandler(d) {
+      d3.select(this).attr("fill", d => colorScale(fips2Value[d.stcofips]));
+    };
+  
+  
+    // var simulation = d3.forceSimulation(urates)
+    //     .force("x", d3.forceX(d => xScale(d.value)).strength(1))
+    //     .force("y", d3.forceY(height / 2))
+    //     .force("collide", d3.forceCollide(4))
+    //     .stop();
+
+    svg.selectAll('rect')
+      .data(urates)
+      .enter()
+      .append('rect')
+      .attr('x', xScale(0.5))
+      .attr('y', d => yScale(d.adj_urate))
+      .attr('width', 40)
+      .attr('height', 0.5)
+      .attr('fill', d => colorScale(d.adj_urate))
+      .attr('id', d => 'rug-' + d.stcofips)
+      .on("mouseover", main.mouseOverHandler)
+      .on("mouseout", mouseOutHandler);                 
+  },
+
+  // MAP
+  makeMap: function (shp, urates, fips2Value) {
+
+    const width = 850;
+    const height = 600;
+    const margin = {
+      top: 20,
+      left: 20,
+      right: 20,
+      bottom: 10
+    };
+
+    svg = d3.select('#map').append('svg')
+            .attr('width', margin.left + width + margin.right)
+            .attr('height', margin.top + height + margin.bottom);
+    
+    geoGenerator = d3.geoPath().projection(d3.geoAlbersUsa());
+
+    const urateScale = d3.scaleLinear()
+                      .domain([0, d3.max(urates, p => p.adj_urate)])
+                      .range([0, 1]);
+
+    const colorScale = d => d3.interpolateViridis(urateScale(d));
+
+    function mouseOutHandler(d) {
+      d3.select(this).attr("fill", d => colorScale(fips2Value[d.properties.GEOID]));
+    };
+
+
+    svg.selectAll('path')
+      .data(shp.features)
+      .enter()
+      .append('path')
+      .attr('d', d => geoGenerator(d))
+      .attr('fill', d => colorScale(fips2Value[d.properties.GEOID]))
+      .attr('id', d => 'ctypath-' + d.properties.GEOID)
+      .on("mouseover", main.mouseOverHandler)
+      .on("mouseout", mouseOutHandler);
+
+  }
 
 };
 
@@ -199,7 +221,7 @@ IndustryBar.prototype = {
   update: function (selector) {
       chart = this;
 
-      console.log(yearData);
+      // console.log(yearData);
 
       chart.svg.selectAll(selector + ' rect')
           .data(yearData)
@@ -232,11 +254,17 @@ app = {
         'shp': shp,
         'urates': urates,
         'natl_industry': natl_industry,
-        'cty_industry': cty_industry
+        'cty_industry': cty_industry,
+        'fips2Value': urates.reduce((acc, row) => {
+            acc[row.stcofips] = row.adj_urate;
+            return acc;
+          }, {})
       };
 
-      app.components.Rug = makeRug(app.data.urates);
-      app.components.Map = makeMap(app.data.shp, app.data.urates);
+      console.log(app.data.urates);
+
+      app.components.Rug = main.makeRug(app.data.urates, app.data.fips2Value);
+      app.components.Map = main.makeMap(app.data.shp, app.data.urates, app.data.fips2Value);
       app.components.natlBar = new IndustryBar('#bar1', app.data.natl_industry);
       app.components.ctyBar = new IndustryBar('#bar2', app.data.cty_industry);
       // app.components.controls    = new Controls('#controls')

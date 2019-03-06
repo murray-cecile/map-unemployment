@@ -7,7 +7,7 @@
 
   .map-container {
     display:flex;
-    max-width: 1000px;
+    max-width: 2000px;
     flex-wrap:wrap;
   }
 
