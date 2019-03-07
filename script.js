@@ -1,7 +1,5 @@
 // CECILE MURRAY
-// Draws on https://github.com/cmgiven/gap-reminder-v4
-// and on the various exercises/solutions in https://github.com/mcnuttandrew/capp-30239
-// and on https://github.com/ivan-ha/d3-hk-map/blob/development/map.js
+// References at the bottom
 
 
 // handy fn to compute domain
@@ -16,20 +14,34 @@ function computeDomain(data, key) {
 
 main = {
 
-  mouseOverHandler: function (d) {
-    d3.select(this).attr('fill', "#FFD816");
-    current = this.id.split('-')[1];
-    console.log(current);
-    if(this.id.split('-')[0] == 'ctypath') {
-      d3.select('#rug-' + current).attr('fill', "#FFD816");
-      console.log('#rug ' + current);
+  highlight: function(stcofips) {
+    if (stcofips==null) {
+      d3.selectAll('.highlight').classed('highlight', false);
     } else {
-      d3.select('#ctypath-' + current).attr('fill', "#FFD816");
+      d3.select('#ctypath-' + stcofips, '#rug-' + stcofips).classed('highlight', true);
     }
   },
 
+  mouseOverHandler: function () {
+    stcofips = this.id.split('-')[1];
+    main.highlight(stcofips);
+  },
+
+  mouseOutHandler: function() {
+    main.highlight(null);
+  },
+
+  // mapClickHandler: function(tooltip, d) {
+  //   tooltip.transition()    
+  //     .duration(200)    
+  //     .style("opacity", .9);    
+  //   tooltip.html(d.properties.NAME)  
+  //     .style("left", (d3.event.pageX) + "px")   
+  //     .style("top", (d3.event.pageY - 28) + "px");
+  // },
+
   // RUG
-  makeRug: function (urates, fips2Value) {
+  makeRug: function (urates) {
 
     const width = 75;
     const height = 600;
@@ -57,11 +69,6 @@ main = {
                         .range([0, 1]);
 
     const colorScale = d => d3.interpolateViridis(urateScale(d));
-
-    function mouseOutHandler(d) {
-      d3.select(this).attr("fill", d => colorScale(fips2Value[d.stcofips]));
-    };
-  
   
     // var simulation = d3.forceSimulation(urates)
     //     .force("x", d3.forceX(d => xScale(d.value)).strength(1))
@@ -80,7 +87,7 @@ main = {
       .attr('fill', d => colorScale(d.adj_urate))
       .attr('id', d => 'rug-' + d.stcofips)
       .on("mouseover", main.mouseOverHandler)
-      .on("mouseout", mouseOutHandler);                 
+      .on("mouseout", main.mouseOutHandler);                 
   },
 
   // MAP
@@ -107,10 +114,8 @@ main = {
 
     const colorScale = d => d3.interpolateViridis(urateScale(d));
 
-    function mouseOutHandler(d) {
-      d3.select(this).attr("fill", d => colorScale(fips2Value[d.properties.GEOID]));
-    };
-
+    const tooltip = d3.select("#map-container").append("text") 
+        .attr("class", "tooltip");
 
     svg.selectAll('path')
       .data(shp.features)
@@ -120,46 +125,20 @@ main = {
       .attr('fill', d => colorScale(fips2Value[d.properties.GEOID]))
       .attr('id', d => 'ctypath-' + d.properties.GEOID)
       .on("mouseover", main.mouseOverHandler)
-      .on("mouseout", mouseOutHandler);
-
+      .on("mouseout", main.mouseOutHandler)
+      .on("click", function(d) {
+        tooltip.transition()    
+          .duration(200)    
+          // .style('opacity', 0.9);
+          .attr('class', 'tooltip');    
+        tooltip.html(d.properties.NAME)  
+          .style("center", (d3.event.pageX) + "px")   
+          .style("top", (d3.event.pageY - 28) + "px");  
+          });
   }
 
 };
 
-function makeNatlBar(industry_data, which_bar) {
-  const width = 400;
-  const height = 400;
-  const margin = {
-    top: 10,
-    left: 20,
-    right: 20,
-    bottom: 10
-  };
-
-  svg = d3.select(which_bar).append('svg')
-          .attr('width', width - margin.left - margin.right)
-          .attr('height', height - margin.top - margin.bottom);
-  
-  const industries = [ ... new Set(industry_data.map(x => x.industry_name))]; // https://codeburst.io/javascript-array-distinct-5edc93501dc4
-  
-  const xScale = d3.scaleBand()
-                   .domain(industries)
-                   .range([margin.left, width]);
-  const yScale = d3.scaleLinear()
-                   .domain([0, d3.max(industry_data, d => d.industry_share)])
-                   .range([height, margin.top]);
-  
-  svg.selectAll('rect')
-    .data(industry_data)
-    .enter()
-    .append('rect')
-    .attr('x', d => xScale(d.industry_name))
-    .attr('y', d => yScale(d.industry_share))
-    .attr('width', xScale.bandwidth())
-    .attr('height', d => yScale(d.industry_share))
-    .attr('fill', "#217FBE");
-
-};
 
 IndustryBar = function (selector, industry_data) {
   yearData = industry_data.filter(d => d.year === app.globals.selected.year);
@@ -261,9 +240,7 @@ app = {
           }, {})
       };
 
-      console.log(app.data.urates);
-
-      app.components.Rug = main.makeRug(app.data.urates, app.data.fips2Value);
+      app.components.Rug = main.makeRug(app.data.urates);
       app.components.Map = main.makeMap(app.data.shp, app.data.urates, app.data.fips2Value);
       app.components.natlBar = new IndustryBar('#bar1', app.data.natl_industry);
       app.components.ctyBar = new IndustryBar('#bar2', app.data.cty_industry);
@@ -327,3 +304,9 @@ Promise.all([
   .then(data => data.json())))
   .then(data => app.initialize(data));
 
+
+// REFERENCES
+// Draws on https://github.com/cmgiven/gap-reminder-v4
+// and on the various exercises/solutions in https://github.com/mcnuttandrew/capp-30239
+// and on https://github.com/ivan-ha/d3-hk-map/blob/development/map.js
+// https://bl.ocks.org/tiffylou/88f58da4599c9b95232f5c89a6321992

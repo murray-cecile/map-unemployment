@@ -65,6 +65,23 @@
   }
 
 
+  .tooltip {
+    position: absolute;     
+    text-align: center;     
+    width: 80px;          
+    height: 14px;         
+    padding: 2px;       
+    border: 0px;        
+    pointer-events: none;
+    /* opacity: 0; */
+  }
+
+  .tooltip.on {
+    background: #ffffff;
+    opacity: 0.9;
+  }
+
+
 /* lt_blue <- "#217FBE"
 lt_orange <- "#FFA220"
 lt_pink <- "#E817A9"
