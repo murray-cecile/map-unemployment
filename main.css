@@ -2,7 +2,7 @@
     align-items:center;
     display:flex;
     flex-direction:column;
-    font-family: "Cabin";
+    font-family: "Lato";
   }
 
   .map-container {
@@ -73,7 +73,7 @@
     padding: 2px;       
     border: 0px;        
     pointer-events: none;
-    /* opacity: 0; */
+    opacity: 0;
   }
 
   .tooltip.on {

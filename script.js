@@ -1,16 +1,29 @@
 // CECILE MURRAY
 // References at the bottom
 
-
-// handy fn to compute domain
-function computeDomain(data, key) {
-  return data.reduce((acc, row) => {
-    return {
-      min: Math.min(acc.min, row[key]),
-      max: Math.max(acc.max, row[key])
-    };
-  }, {min: Infinity, max: -Infinity});
-}
+function wrap(text, width) {
+  text.each(function() {
+    var text = d3.select(this),
+        words = text.text().split(/\s+/).reverse(),
+        word,
+        line = [],
+        lineNumber = 0,
+        lineHeight = 1.1, // ems
+        y = text.attr("y"),
+        dy = parseFloat(text.attr("dy")),
+        tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+    while (word = words.pop()) {
+      line.push(word);
+      tspan.text(line.join(" "));
+      if (tspan.node().getComputedTextLength() > width) {
+        line.pop();
+        tspan.text(line.join(" "));
+        line = [word];
+        tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+      }
+    }
+  })
+};
 
 main = {
 
@@ -31,14 +44,15 @@ main = {
     main.highlight(null);
   },
 
-  // mapClickHandler: function(tooltip, d) {
-  //   tooltip.transition()    
-  //     .duration(200)    
-  //     .style("opacity", .9);    
-  //   tooltip.html(d.properties.NAME)  
-  //     .style("left", (d3.event.pageX) + "px")   
-  //     .style("top", (d3.event.pageY - 28) + "px");
-  // },
+  mapClickHandler: function(d, tooltip) {
+    tooltip.transition()    
+      .duration(200)    
+      .attr('class', 'tooltip on');
+    console.log(d3.event.pageX);
+    tooltip.html(d.properties.NAME)  
+      .style("left", (d3.event.pageX) + "px")   
+      .style("top", (d3.event.pageY - 28) + "px");
+  },
 
   // RUG
   makeRug: function (urates) {
@@ -69,12 +83,6 @@ main = {
                         .range([0, 1]);
 
     const colorScale = d => d3.interpolateViridis(urateScale(d));
-  
-    // var simulation = d3.forceSimulation(urates)
-    //     .force("x", d3.forceX(d => xScale(d.value)).strength(1))
-    //     .force("y", d3.forceY(height / 2))
-    //     .force("collide", d3.forceCollide(4))
-    //     .stop();
 
     svg.selectAll('rect')
       .data(urates)
@@ -87,7 +95,8 @@ main = {
       .attr('fill', d => colorScale(d.adj_urate))
       .attr('id', d => 'rug-' + d.stcofips)
       .on("mouseover", main.mouseOverHandler)
-      .on("mouseout", main.mouseOutHandler);                 
+      .on("mouseout", main.mouseOutHandler);  
+      
   },
 
   // MAP
@@ -114,8 +123,7 @@ main = {
 
     const colorScale = d => d3.interpolateViridis(urateScale(d));
 
-    const tooltip = d3.select("#map-container").append("text") 
-        .attr("class", "tooltip");
+    tooltip = d3.select("#map-container").append("text") .attr("class", "tooltip");
 
     svg.selectAll('path')
       .data(shp.features)
@@ -126,15 +134,7 @@ main = {
       .attr('id', d => 'ctypath-' + d.properties.GEOID)
       .on("mouseover", main.mouseOverHandler)
       .on("mouseout", main.mouseOutHandler)
-      .on("click", function(d) {
-        tooltip.transition()    
-          .duration(200)    
-          // .style('opacity', 0.9);
-          .attr('class', 'tooltip');    
-        tooltip.html(d.properties.NAME)  
-          .style("center", (d3.event.pageX) + "px")   
-          .style("top", (d3.event.pageY - 28) + "px");  
-          });
+      .on("click", d => main.mapClickHandler(d, tooltip));
   }
 
 };
@@ -151,9 +151,9 @@ IndustryBar.prototype = {
   setup: function (selector, industry_data) {
       chart = this;
 
-      margin = { top: 20, right: 20, bottom: 20, left: 20 };
+      margin = { top: 20, right: 20, bottom: 100, left: 20 };
 
-      width = 400 - margin.left - margin.right;
+      width = 500 - margin.left - margin.right;
       height = 400 - margin.top - margin.bottom;
 
       chart.svg = d3.select(selector)
@@ -183,16 +183,14 @@ IndustryBar.prototype = {
       chart.svg.append('g')
           .attr('class', 'x axis')
           .attr('transform', 'translate(0,' + height + ')')
-          .call(xAxis);
+          .call(xAxis)
+        .selectAll(".tick text")
+          .call(wrap, chart.scales.x.bandwidth());
 
       chart.svg.append('g')
           .attr('class', 'y axis')
+          .attr('transform', 'translate('+ margin.left + ',0)')
           .call(yAxis);
-
-      // chart.tooltip = chart.svg.append('text')
-      //     .attr('x', width)
-      //     .attr('y', 0)
-      //     .attr('class', 'tooltip')
 
       chart.update(selector);
   },
@@ -210,7 +208,8 @@ IndustryBar.prototype = {
           .attr('y', d => height - chart.scales.height(d.industry_share))
           .attr('width', chart.scales.x.bandwidth())
           .attr('height', d => chart.scales.height(d.industry_share))
-          .attr('fill', "#217FBE");
+          .attr('fill', "#217FBE")
+          .attr('stroke', '#FFFFFF');
 
   }
 };
@@ -310,3 +309,4 @@ Promise.all([
 // and on the various exercises/solutions in https://github.com/mcnuttandrew/capp-30239
 // and on https://github.com/ivan-ha/d3-hk-map/blob/development/map.js
 // https://bl.ocks.org/tiffylou/88f58da4599c9b95232f5c89a6321992
+// word wrap from https://bl.ocks.org/mbostock/7555321
