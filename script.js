@@ -238,43 +238,48 @@ IndustryBar.prototype = {
   }
 };
 
-Controls = function(dates) {
+Controls = {
 
-  // Slider designed based on https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
-  sliderWidth = 800;
-  sliderHeight = 100;
-  margins = { 
-    horizontal: 30,
-    vertical: 10,
-  };
+  setup: function(dates) {
 
+    // Slider designed based on https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
+    sliderWidth = 800;
+    sliderHeight = 100;
+    margins = { 
+      horizontal: 30,
+      vertical: 10,
+    };
 
-  sliderTime = d3.sliderBottom()
-    .min(d3.min(dates.min))
-    .max(d3.max(dates.max))
-    .step(1000 * 60 * 60 * 24 * 30)
-    .width(sliderWidth - 2 * margins.horizontal)
-    .tickFormat(d3.timeFormat('%YM'))
-    .tickValues(dates.range)
-    .default(new Date(2017, 1))
-    .on('onchange', val => {
-      d3.select('#slider-label').text(d3.timeFormat('%YM')(val));
-    });
+    sliderTime = d3.sliderBottom()
+      .min(dates.min)
+      .max(dates.max)
+      .step(1000 * 60 * 60 * 24 * 30)
+      .width(sliderWidth - 2 * margins.horizontal)
+      .tickFormat(d3.timeFormat('%Y%M'))
+      .tickValues(dates.range)
+      .default(new Date(2017, 1))
+      .on('onchange', val => {
+        d3.select('#slider-label').text(d3.timeFormat('%Y%M')(val));
+      });
 
-  gTime = d3
-    .select('#slider')
-    .append('svg')
-    .attr('width', sliderWidth)
-    .attr('height', sliderHeight)
-    .append('g')
-    .attr('class', 'slider')
-    .attr('transform', 'translate(' + margins.horizontal + ',' + margins.vertical + ')');
+    gTime = d3.select('#slider')
+      .append('svg')
+      .attr('width', sliderWidth)
+      .attr('height', sliderHeight)
+      .append('g')
+      .attr('class', 'slider')
+      .attr('transform', 'translate(' + margins.horizontal + ',' + margins.vertical + ')');
 
-  gTime.call(sliderTime);
+    gTime.call(sliderTime);
 
-  d3.select('#slider-label').text(d3.timeFormat('%Y')(sliderTime.value()));
-      
+    d3.select('#slider-label').text(d3.timeFormat('%Y')(sliderTime.value()));
 
+  },
+  
+  update: function() {
+    console.log(this);
+    console.log(sliderTime.value());
+  }
 };
 
 app = {
@@ -312,9 +317,9 @@ app = {
       app.globals.available.dates.range = d3.range(11).map(function(d) {
         return new Date(2017, d, 1);
       });
-      console.log(app.globals.available.dates.range);
+      // console.log(app.globals.available.dates.range);
       
-      app.components.Controls = Controls(app.globals.available.dates);
+      app.components.Controls = Controls.setup(app.globals.available.dates);
 
       app.components.Rug = main.makeRug(app.data.urates);
       app.components.Map = main.makeMap(app.data.shp, app.data.urates, app.data.fips2Value);
@@ -378,7 +383,8 @@ Promise.all([
   './data/national_industry_shares_07-18.json',
   './data/qcew-oh17.json'].map(url => fetch(url)
   .then(data => data.json())))
-  .then(data => app.initialize(data));
+  .then(data => app.initialize(data))
+  .then(app.update());
 
 
 // REFERENCES
