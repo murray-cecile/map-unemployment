@@ -19,6 +19,8 @@ write_json_there <- function(df, filename){
   setwd(HERE)
 }
 
+setwd(HERE)
+
 #===============================================================================#
 # COUNTY POPULATION
 #===============================================================================#
@@ -60,12 +62,13 @@ adj_factor <- cturate %>% filter(period != "M13", year < 2018) %>%
 
 adj_cturate <- cturate %>% filter(period != "M13", year < 2018) %>% 
   left_join(adj_factor, by = "period") %>% 
-  mutate(adj_urate = urate - month_adj) 
+  mutate(adj_urate = urate - month_adj,
+         date = paste0(year, '-', substr(period, 2, 3)))
 
-adj_cturate %>% select(year, period, periodName, stfips, stcofips, adj_urate) %>% 
+adj_cturate %>% select(year, date, periodName, stfips, stcofips, adj_urate) %>% 
   write_json_there("adj-county-urate_2007-2018.json")
 
-adj_cturate %>% select(year, period, periodName, stfips, stcofips, adj_urate) %>% 
+adj_cturate %>% select(year, date, periodName, stfips, stcofips, adj_urate) %>% 
   filter(year == 2017) %>% write_json_there("adj-urate-2017.json")
 
 #===============================================================================#

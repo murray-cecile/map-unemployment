@@ -97,6 +97,7 @@ main = {
       
   },
 
+
   // MAP
   makeMap: function (shp, urates, fips2Value) {
 
@@ -237,13 +238,59 @@ IndustryBar.prototype = {
   }
 };
 
+Controls = function(dates) {
+
+  // Slider designed based on https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
+  sliderWidth = 800;
+  sliderHeight = 100;
+  margins = { 
+    horizontal: 30,
+    vertical: 10,
+  };
+
+
+  sliderTime = d3.sliderBottom()
+    .min(d3.min(dates.min))
+    .max(d3.max(dates.max))
+    .step(1000 * 60 * 60 * 24 * 30)
+    .width(sliderWidth - 2 * margins.horizontal)
+    .tickFormat(d3.timeFormat('%YM'))
+    .tickValues(dates.range)
+    .default(new Date(2017, 1))
+    .on('onchange', val => {
+      d3.select('#slider-label').text(d3.timeFormat('%YM')(val));
+    });
+
+  gTime = d3
+    .select('#slider')
+    .append('svg')
+    .attr('width', sliderWidth)
+    .attr('height', sliderHeight)
+    .append('g')
+    .attr('class', 'slider')
+    .attr('transform', 'translate(' + margins.horizontal + ',' + margins.vertical + ')');
+
+  gTime.call(sliderTime);
+
+  d3.select('#slider-label').text(d3.timeFormat('%Y')(sliderTime.value()));
+      
+
+};
+
 app = {
   data: [],
   components: [],
 
   globals: {
-      // available: { years: d3.range(MIN_YEAR, MAX_YEAR + 1) },
-      selected: { date: "2017-12",
+      available: {
+        years: '',
+        dates: {
+          min: new Date(2017, 0),
+          max: new Date(2017, 11)
+        },
+        range: ''
+      },
+      selected: {date: "2017-12",
                   year: 2017 },
       animating: false
   },
@@ -261,6 +308,13 @@ app = {
             return acc;
           }, {})
       };
+
+      app.globals.available.dates.range = d3.range(11).map(function(d) {
+        return new Date(2017, d, 1);
+      });
+      console.log(app.globals.available.dates.range);
+      
+      app.components.Controls = Controls(app.globals.available.dates);
 
       app.components.Rug = main.makeRug(app.data.urates);
       app.components.Map = main.makeMap(app.data.shp, app.data.urates, app.data.fips2Value);

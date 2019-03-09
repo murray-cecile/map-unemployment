@@ -10,9 +10,13 @@
 </head>
 <body>
   <script src="https://d3js.org/d3.v5.js"></script>
+  <script src="https://unpkg.com/d3-simple-slider"></script>
   <script src="script.js"></script>
   <h2>Mapping U.S. Unemployment</h2>
-  <div id='slider' class='slider'></div>
+  <div id='slider-container' class='slider'>
+    <div id='slider-label'></div>
+    <div id='slider'></div>
+  </div>
   <div id='map-container' class='map-container'> 
     <div id='map'></div>
     <div id='rug'></div>
