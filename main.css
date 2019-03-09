@@ -20,7 +20,7 @@
 /* TEXT */
 
   .title {
-    font-family: 'Cabin';
+    font-family: 'Lato';
     font-size:large;
   }
 
@@ -61,7 +61,7 @@
   /* MAP */
 
   .highlight {
-    fill:#FFD816;
+    fill:#17E849;
   }
 
 

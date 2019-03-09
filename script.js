@@ -1,29 +1,7 @@
 // CECILE MURRAY
 // References at the bottom
 
-function wrap(text, width) {
-  text.each(function() {
-    var text = d3.select(this),
-        words = text.text().split(/\s+/).reverse(),
-        word,
-        line = [],
-        lineNumber = 0,
-        lineHeight = 1.1, // ems
-        y = text.attr("y"),
-        dy = parseFloat(text.attr("dy")),
-        tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
-    while (word = words.pop()) {
-      line.push(word);
-      tspan.text(line.join(" "));
-      if (tspan.node().getComputedTextLength() > width) {
-        line.pop();
-        tspan.text(line.join(" "));
-        line = [word];
-        tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
-      }
-    }
-  })
-};
+
 
 main = {
 
@@ -32,27 +10,45 @@ main = {
       d3.selectAll('.highlight').classed('highlight', false);
     } else {
       d3.select('#ctypath-' + stcofips, '#rug-' + stcofips).classed('highlight', true);
+      console.log('#rug-' + stcofips);
+      console.log('#ctypath-' + stcofips);
     }
   },
 
-  mouseOverHandler: function () {
+  makeTooltip: function(d, tooltip) {
+    tooltip.transition()    
+      .duration(200)    
+      .attr('class', 'tooltip on');
+    tooltip.html(d.properties.NAME)  
+      .style("left", (d3.event.pageX) + "px")   
+      .style("top", (d3.event.pageY - 28) + "px");
+  },
+
+  mapMouseOverHandler: function (d, tooltip) {
+    if (d.properties){
+      stcofips = d.properties.GEOID;
+      main.highlight(stcofips);
+      main.makeTooltip(d, tooltip);
+    } else if (d.year) {
+      // console.log(this);
+      // stcofips = this.id.split('-')[1];
+      // main.highlight(stcofips);
+    }
+  },
+
+  rugMouseOverHandler: function() {
     stcofips = this.id.split('-')[1];
     main.highlight(stcofips);
   },
 
   mouseOutHandler: function() {
     main.highlight(null);
+    d3.select('.tooltip on')
+      .transition()
+      .duration(200)
+      .attr('opacity', '0');
   },
 
-  mapClickHandler: function(d, tooltip) {
-    tooltip.transition()    
-      .duration(200)    
-      .attr('class', 'tooltip on');
-    console.log(d3.event.pageX);
-    tooltip.html(d.properties.NAME)  
-      .style("left", (d3.event.pageX) + "px")   
-      .style("top", (d3.event.pageY - 28) + "px");
-  },
 
   // RUG
   makeRug: function (urates) {
@@ -80,9 +76,11 @@ main = {
   
     const urateScale = d3.scaleLinear()
                         .domain([0, d3.max(urates, p => p.adj_urate)])
-                        .range([0, 1]);
+                        .range([1, 0]);
 
-    const colorScale = d => d3.interpolateViridis(urateScale(d));
+    const colorScale = d => d3.interpolatePlasma(urateScale(d));
+
+    tooltip = d3.select("#map-container").append("text") .attr("class", "tooltip");
 
     svg.selectAll('rect')
       .data(urates)
@@ -94,7 +92,7 @@ main = {
       .attr('height', 0.5)
       .attr('fill', d => colorScale(d.adj_urate))
       .attr('id', d => 'rug-' + d.stcofips)
-      .on("mouseover", main.mouseOverHandler)
+      .on("mouseover", main.rugMouseOverHandler)
       .on("mouseout", main.mouseOutHandler);  
       
   },
@@ -119,9 +117,9 @@ main = {
 
     const urateScale = d3.scaleLinear()
                       .domain([0, d3.max(urates, p => p.adj_urate)])
-                      .range([0, 1]);
+                      .range([1, 0]);
 
-    const colorScale = d => d3.interpolateViridis(urateScale(d));
+    const colorScale = d => d3.interpolatePlasma(urateScale(d));
 
     tooltip = d3.select("#map-container").append("text") .attr("class", "tooltip");
 
@@ -132,9 +130,9 @@ main = {
       .attr('d', d => geoGenerator(d))
       .attr('fill', d => colorScale(fips2Value[d.properties.GEOID]))
       .attr('id', d => 'ctypath-' + d.properties.GEOID)
-      .on("mouseover", main.mouseOverHandler)
+      .on("mouseover", d => main.mapMouseOverHandler(d, tooltip))
       .on("mouseout", main.mouseOutHandler)
-      .on("click", d => main.mapClickHandler(d, tooltip));
+      .on("click", d => main.makeTooltip(d, tooltip));
   }
 
 };
@@ -146,6 +144,31 @@ IndustryBar = function (selector, industry_data) {
   this.setup(selector, yearData);
 };
 
+// word wrap from https://bl.ocks.org/mbostock/7555321
+function wrap(text, width) {
+  text.each(function() {
+    var text = d3.select(this),
+        words = text.text().split(/\s+/).reverse(),
+        word,
+        line = [],
+        lineNumber = 0,
+        lineHeight = 1.1, // ems
+        y = text.attr("y"),
+        dy = parseFloat(text.attr("dy")),
+        tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+    while (word = words.pop()) {
+      line.push(word);
+      tspan.text(line.join(" "));
+      if (tspan.node().getComputedTextLength() > width) {
+        line.pop();
+        tspan.text(line.join(" "));
+        line = [word];
+        tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+      }
+    }
+  })
+};
+
 IndustryBar.prototype = {
   
   setup: function (selector, industry_data) {
@@ -153,7 +176,7 @@ IndustryBar.prototype = {
 
       margin = { top: 20, right: 20, bottom: 100, left: 20 };
 
-      width = 500 - margin.left - margin.right;
+      width = 600 - margin.left - margin.right;
       height = 400 - margin.top - margin.bottom;
 
       chart.svg = d3.select(selector)
@@ -309,4 +332,3 @@ Promise.all([
 // and on the various exercises/solutions in https://github.com/mcnuttandrew/capp-30239
 // and on https://github.com/ivan-ha/d3-hk-map/blob/development/map.js
 // https://bl.ocks.org/tiffylou/88f58da4599c9b95232f5c89a6321992
-// word wrap from https://bl.ocks.org/mbostock/7555321
