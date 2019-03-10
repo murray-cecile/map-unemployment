@@ -74,12 +74,6 @@ main = {
                     .domain([0, 1])
                     .range([0, width]);
   
-    const urateScale = d3.scaleLinear()
-                        .domain([0, d3.max(urates, p => p.adj_urate)])
-                        .range([1, 0]);
-
-    const colorScale = d => d3.interpolatePlasma(urateScale(d));
-
     tooltip = d3.select("#map-container").append("text") .attr("class", "tooltip");
 
     svg.selectAll('rect')
@@ -90,13 +84,26 @@ main = {
       .attr('y', d => yScale(d.adj_urate))
       .attr('width', 40)
       .attr('height', 0.5)
-      .attr('fill', d => colorScale(d.adj_urate))
+      .attr('opacity', 0)
       .attr('id', d => 'rug-' + d.stcofips)
       .on("mouseover", main.rugMouseOverHandler)
       .on("mouseout", main.mouseOutHandler);  
       
   },
 
+  updateRug: function(maxUrate, year, month) {
+
+    const urateScale = d3.scaleLinear()
+    .domain([0, maxUrate])
+    .range([1, 0]);
+
+    const colorScale = d => d3.interpolatePlasma(urateScale(d));
+
+    d3.selectAll('#rug rect')
+      .attr('fill',  d => colorScale(d.adj_urate))
+      .attr('opacity', d => 1 * (d.year === year & d.month - 1 === month));
+      // .classed('rug-active', d => d.year === year & d.month - 1 === month);
+  },
 
   // MAP
   makeMap: function (shp) {
@@ -374,6 +381,7 @@ app = {
         return acc;
       }, {});
 
+    app.components.Rug = main.updateRug(app.data.max_urate, app.globals.selected.year, app.globals.selected.month);
     app.components.Map = main.updateMap(currentYearFips2Urate, app.data.max_urate);
 
 

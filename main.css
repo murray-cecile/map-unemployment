@@ -50,9 +50,9 @@
 
  /* RUG CHARTS */
 
-  /* rect.rug {
-    fill: #217FBE;
-  } */
+  #rug .rect-active {
+    opacity: 1;
+  }
 
   rect.rug.highlight {
     fill: #17E849;
