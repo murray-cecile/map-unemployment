@@ -144,7 +144,6 @@ main = {
       .attr('opacity', 1)
       .on("click", d => main.makeTooltip(d, tooltip));
 
-    console.log("updating");
   }
 
 };
@@ -259,7 +258,7 @@ Controls.prototype = {
     month: 1
   },
 
-  setup: function(dates, dispatch) {
+  setup: function(dates) {
 
     // Slider designed based on https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
     sliderWidth = 800;
@@ -274,15 +273,14 @@ Controls.prototype = {
       .max(dates.max)
       .step(1000 * 60 * 60 * 24 * 30)
       .width(sliderWidth - 2 * margins.horizontal)
-      .tickFormat(d3.timeFormat('%B %Y'))
-      .tickValues(dates.range)
-      .ticks(10)
+      .tickFormat(d3.timeFormat('%Y'))
+      // .tickValues(dates.range)
       .default(new Date(2017, 1))
       .on('onchange', val => {
-        d3.select('#slider-label').text(d3.timeFormat('%Y')(val));
+        d3.select('#slider-label').text(d3.timeFormat('%B %Y')(val));
         this.selected.year = val.getFullYear();
         this.selected.month = val.getMonth();
-        this.update();
+        app.update();
       });
 
     gTime = d3.select('#slider')
@@ -299,7 +297,7 @@ Controls.prototype = {
 
   },
   
-  update: function() {
+  getDate: function() {
     return this.selected;
   }
 
@@ -365,7 +363,7 @@ app = {
 
   update: function () {
 
-    selected = app.components.Controls.update();
+    selected = app.components.Controls.getDate();
     app.globals.selected.year = selected.year;
     app.globals.selected.month = selected.month;
     app.globals.selected.date = selected.year + '-' + selected.month;
@@ -383,11 +381,6 @@ app = {
 
 }
 
-watch = function(app){
-  dispatch = d3.dispatch("changeYear");
-  dispatch.on("changeYear", app.update());
-  watched = d3.select('#slider').on('onchange', dispatch.call("changeYear"));
-};
 
 // DATA LOADING
 Promise.all([
@@ -396,8 +389,7 @@ Promise.all([
   './data/national_industry_shares_07-18.json',
   './data/qcew-oh17.json'].map(url => fetch(url)
   .then(data => data.json())))
-  .then(data => app.initialize(data))
-  .then(watch(app));
+  .then(data => app.initialize(data));
 
 
 // REFERENCES
