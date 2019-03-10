@@ -99,7 +99,7 @@ main = {
 
 
   // MAP
-  makeMap: function (shp, urates, fips2Value) {
+  makeMap: function (shp) {
 
     const width = 850;
     const height = 600;
@@ -116,12 +116,6 @@ main = {
     
     geoGenerator = d3.geoPath().projection(d3.geoAlbersUsa());
 
-    const urateScale = d3.scaleLinear()
-                      .domain([0, d3.max(urates, p => p.adj_urate)])
-                      .range([1, 0]);
-
-    const colorScale = d => d3.interpolatePlasma(urateScale(d));
-
     tooltip = d3.select("#map-container").append("text") .attr("class", "tooltip");
 
     svg.selectAll('path')
@@ -129,27 +123,28 @@ main = {
       .enter()
       .append('path')
       .attr('d', d => geoGenerator(d))
-      .attr('fill', d => colorScale(fips2Value[d.properties.GEOID]))
       .attr('id', d => 'ctypath-' + d.properties.GEOID)
       .attr('opacity', 0)
       .on("mouseover", d => main.mapMouseOverHandler(d, tooltip))
-      .on("mouseout", main.mouseOutHandler)
-      .on("click", d => main.makeTooltip(d, tooltip));
+      .on("mouseout", main.mouseOutHandler);
   },
 
-  updateMap: function(year, fips2Value) {
+  updateMap: function(fips2Value, maxUrate) {
 
     const urateScale = d3.scaleLinear()
-                      .domain([0, d3.max(urates, p => p.adj_urate)])
+                      .domain([0, maxUrate])
                       .range([1, 0]);
 
-    const colorScale = d => d3.interpolatePlasma(urateScale(d));   
+    const colorScale = d => d3.interpolatePlasma(urateScale(d));  
     
-    // d3.select('#map')
-    //   .data(shp.features)
-    //   .enter()
-    //   .attr('fill', d => colorScale(fips2Value[d.properties.GEOID]));
+    tooltip = d3.select("#map-container").append("text") .attr("class", "tooltip");
+    
+    d3.selectAll('#map path')
+      .attr('fill', d => colorScale(fips2Value[d.properties.GEOID]))
+      .attr('opacity', 1)
+      .on("click", d => main.makeTooltip(d, tooltip));
 
+    console.log("updating");
   }
 
 };
@@ -238,8 +233,6 @@ IndustryBar.prototype = {
   update: function (selector) {
       chart = this;
 
-      // console.log(yearData);
-
       chart.svg.selectAll(selector + ' rect')
           .data(yearData)
           .enter()
@@ -254,9 +247,19 @@ IndustryBar.prototype = {
   }
 };
 
-Controls = {
+Controls = function (dates) {
+  this.setup(dates);
+};
 
-  setup: function(dates) {
+
+Controls.prototype = {
+
+  selected: {
+    year: 2017,
+    month: 1
+  },
+
+  setup: function(dates, dispatch) {
 
     // Slider designed based on https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
     sliderWidth = 800;
@@ -271,12 +274,15 @@ Controls = {
       .max(dates.max)
       .step(1000 * 60 * 60 * 24 * 30)
       .width(sliderWidth - 2 * margins.horizontal)
-      .tickFormat(d3.timeFormat('%Y%M'))
+      .tickFormat(d3.timeFormat('%B %Y'))
       .tickValues(dates.range)
       .ticks(10)
       .default(new Date(2017, 1))
       .on('onchange', val => {
-        d3.select('#slider-label').text(d3.timeFormat('%Y%M')(val));
+        d3.select('#slider-label').text(d3.timeFormat('%Y')(val));
+        this.selected.year = val.getFullYear();
+        this.selected.month = val.getMonth();
+        this.update();
       });
 
     gTime = d3.select('#slider')
@@ -289,18 +295,18 @@ Controls = {
 
     gTime.call(sliderTime);
 
-    d3.select('#slider-label').text(d3.timeFormat('%Y')(sliderTime.value()));
+    d3.select('#slider-label').text(d3.timeFormat('%B %Y')(sliderTime.value()));
 
-  } //,
+  },
   
-  // update: function() {
-  //   console.log(d3.select('.parameter-value'))
+  update: function() {
+    return this.selected;
+  }
 
-  // }
 };
 
 app = {
-  data: [],
+  data: '',
   components: [],
 
   globals: {
@@ -309,94 +315,79 @@ app = {
         dates: {
           min: new Date(2007, 0),
           max: new Date(2017, 11)
-        },
-        range: ''
+        }
       },
-      selected: {date: "2017-11",
-                  year: 2017 },
-      animating: false
-  },
+      selected: { 
+        date: '2017-1',
+        year: 2017,
+        month: 1 
+      }
+    },
+  
 
   initialize: function (data) {
+
+    // loading approach from  https://github.com/cmgiven/gap-reminder-v4
+    d3.select('#loading')
+      .transition()
+      .style('opacity', 0)
+      .remove();
+
+    d3.select('#main')
+      .style('opacity', 0)
+      .style('display', 'block')
+      .transition()
+      .style('opacity', 1);
       
-      const [shp, urates, natl_industry, cty_industry] = data;
-      app.data = {
-        'shp': shp,
-        'urates': urates,
-        'natl_industry': natl_industry,
-        'cty_industry': cty_industry,
-        'fips2Value': urates.reduce((acc, row) => {
-            acc[row.stcofips] = row.adj_urate;
-            return acc;
-          }, {})
-      };
+    const [shp, urates, natl_industry, cty_industry] = data;
+    app.data = {
+      'shp': shp,
+      'urates': urates,
+      'natl_industry': natl_industry,
+      'cty_industry': cty_industry,
+      'max_urate': d3.max(urates, p => p.adj_urate)
+    };
 
-      app.globals.available.dates.range = d3.range(110).map(function(d) {
-        return new Date(2007 + Math.floor(d / 10), d % 12, 1);
-      });
-      
-      app.components.Controls = Controls.setup(app.globals.available.dates);
+    app.globals.available.dates.range = d3.range(110).map(function(d) {
+      return new Date(2007 + Math.floor(d / 10), d % 12, 1);
+    });
 
-      app.components.Rug = main.makeRug(app.data.urates);
-      app.components.Map = main.makeMap(app.data.shp, app.data.urates, app.data.fips2Value);
-      app.components.natlBar = new IndustryBar('#bar1', app.data.natl_industry);
-      app.components.ctyBar = new IndustryBar('#bar2', app.data.cty_industry);
-      // app.components.controls    = new Controls('#controls')
+    app.components.Controls = new Controls(app.globals.available.dates);
 
+    app.components.Rug = main.makeRug(app.data.urates);
+    app.components.Map = main.makeMap(app.data.shp);
+    app.components.natlBar = new IndustryBar('#bar1', app.data.natl_industry);
+    app.components.ctyBar = new IndustryBar('#bar2', app.data.cty_industry);
 
-      // Hide the loading dialog and reveal the chart.
-      d3.select('#loading')
-          .transition()
-          .style('opacity', 0)
-          .remove();
-
-      d3.select('#main')
-          .style('opacity', 0)
-          .style('display', 'block')
-          .transition()
-          .style('opacity', 1);
+    app.update();
 
   },
 
-  update: function (year) {
+  update: function () {
 
-    app.globals.selected.year = year;
+    selected = app.components.Controls.update();
+    app.globals.selected.year = selected.year;
+    app.globals.selected.month = selected.month;
+    app.globals.selected.date = selected.year + '-' + selected.month;
 
-    currentYearFips2Urate = urates.filter(d => d.year + '-' + d.month === app.selected.date)
+    currentYearFips2Urate = app.data.urates.filter(d => d.year + '-' + (d.month - 1) === app.globals.selected.date)
       .reduce((acc, row) => {
           acc[row.stcofips] = row.adj_urate;
         return acc;
       }, {});
 
-      console.log(currentYearFips2Urate);
-    
-    for (var component in app.components) {
-        if (app.components[component].update) {
-            app.components[component].update()
-        }
-    }
+    app.components.Map = main.updateMap(currentYearFips2Urate, app.data.max_urate);
+
+
   }
 
-  // incrementYear: function () {
-  //     var availableYears = app.globals.available.years;
-  //     var currentIdx = availableYears.indexOf(app.globals.selected.year);
-  //     app.setYear(availableYears[(currentIdx + 1) % availableYears.length]);
-  // },
-
-  // toggleAnimation: function () {
-  //     if (app.globals.animating) {
-  //         app.interval.stop()
-  //         d3.select('body').classed('animating', false)
-  //         app.globals.animating = false
-  //     } else {
-  //         app.interval = d3.interval(app.incrementYear, ANIMATION_INTERVAL)
-  //         d3.select('body').classed('animating', true)
-  //         app.globals.animating = true
-  //     }
-
-  //     app.update()
-  // }
 }
+
+watch = function(app){
+  dispatch = d3.dispatch("changeYear");
+  dispatch.on("changeYear", app.update());
+  watched = d3.select('#slider').on('onchange', dispatch.call("changeYear"));
+};
 
 // DATA LOADING
 Promise.all([
@@ -406,7 +397,7 @@ Promise.all([
   './data/qcew-oh17.json'].map(url => fetch(url)
   .then(data => data.json())))
   .then(data => app.initialize(data))
-  .then(app.update());
+  .then(watch(app));
 
 
 // REFERENCES

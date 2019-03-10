@@ -11,19 +11,25 @@
 <body>
   <script src="https://d3js.org/d3.v5.js"></script>
   <script src="https://unpkg.com/d3-simple-slider"></script>
+  <script src="https://d3js.org/d3-dispatch.v1.min.js"></script>
   <script src="script.js"></script>
   <h2>Mapping U.S. Unemployment</h2>
-  <div id='slider-container' class='slider'>
-    <div id='slider-label'></div>
-    <div id='slider'></div>
-  </div>
-  <div id='map-container' class='map-container'> 
-    <div id='map'></div>
-    <div id='rug'></div>
-  </div>
-  <div id='bars' class='bars'>
-    <div id='bar1'></div>
-    <div id='bar2'></div>
+  <div id='loading'>Data are loading</div>
+  <div id='main'>
+    <p id='slider-text'>Slide the bar to watch the unemployment rate change over time.</p>
+    <div id='slider-container' class='slider'>
+      <div id='slider-label'></div>
+      <div id='slider'></div>
+    </div>
+    <div id='map-container' class='map-container'> 
+      <div id='map'></div>
+      <div id='rug'></div>
+    </div>
+    <div id='bars' class='bars'>
+      <p id='bar-text'>These charts show how this county's industry mix compares to the national aggregate.</p>
+      <div id='bar1'></div>
+      <div id='bar2'></div>
+    </div>
   </div>
 </body>
 </html>
