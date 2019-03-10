@@ -10,8 +10,8 @@ main = {
       d3.selectAll('.highlight').classed('highlight', false);
     } else {
       d3.select('#ctypath-' + stcofips, '#rug-' + stcofips).classed('highlight', true);
-      console.log('#rug-' + stcofips);
-      console.log('#ctypath-' + stcofips);
+      // console.log('#rug-' + stcofips);
+      // console.log('#ctypath-' + stcofips);
     }
   },
 
@@ -131,9 +131,25 @@ main = {
       .attr('d', d => geoGenerator(d))
       .attr('fill', d => colorScale(fips2Value[d.properties.GEOID]))
       .attr('id', d => 'ctypath-' + d.properties.GEOID)
+      .attr('opacity', 0)
       .on("mouseover", d => main.mapMouseOverHandler(d, tooltip))
       .on("mouseout", main.mouseOutHandler)
       .on("click", d => main.makeTooltip(d, tooltip));
+  },
+
+  updateMap: function(year, fips2Value) {
+
+    const urateScale = d3.scaleLinear()
+                      .domain([0, d3.max(urates, p => p.adj_urate)])
+                      .range([1, 0]);
+
+    const colorScale = d => d3.interpolatePlasma(urateScale(d));   
+    
+    // d3.select('#map')
+    //   .data(shp.features)
+    //   .enter()
+    //   .attr('fill', d => colorScale(fips2Value[d.properties.GEOID]));
+
   }
 
 };
@@ -257,6 +273,7 @@ Controls = {
       .width(sliderWidth - 2 * margins.horizontal)
       .tickFormat(d3.timeFormat('%Y%M'))
       .tickValues(dates.range)
+      .ticks(10)
       .default(new Date(2017, 1))
       .on('onchange', val => {
         d3.select('#slider-label').text(d3.timeFormat('%Y%M')(val));
@@ -274,12 +291,12 @@ Controls = {
 
     d3.select('#slider-label').text(d3.timeFormat('%Y')(sliderTime.value()));
 
-  },
+  } //,
   
-  update: function() {
-    console.log(this);
-    console.log(sliderTime.value());
-  }
+  // update: function() {
+  //   console.log(d3.select('.parameter-value'))
+
+  // }
 };
 
 app = {
@@ -290,12 +307,12 @@ app = {
       available: {
         years: '',
         dates: {
-          min: new Date(2017, 0),
+          min: new Date(2007, 0),
           max: new Date(2017, 11)
         },
         range: ''
       },
-      selected: {date: "2017-12",
+      selected: {date: "2017-11",
                   year: 2017 },
       animating: false
   },
@@ -314,10 +331,9 @@ app = {
           }, {})
       };
 
-      app.globals.available.dates.range = d3.range(11).map(function(d) {
-        return new Date(2017, d, 1);
+      app.globals.available.dates.range = d3.range(110).map(function(d) {
+        return new Date(2007 + Math.floor(d / 10), d % 12, 1);
       });
-      // console.log(app.globals.available.dates.range);
       
       app.components.Controls = Controls.setup(app.globals.available.dates);
 
@@ -342,17 +358,23 @@ app = {
 
   },
 
-  update: function () {
-      for (var component in app.components) {
-          if (app.components[component].update) {
-              app.components[component].update()
-          }
-      }
-  },
+  update: function (year) {
 
-  setYear: function (year) {
-      app.globals.selected.year = year;
-      app.update()
+    app.globals.selected.year = year;
+
+    currentYearFips2Urate = urates.filter(d => d.year + '-' + d.month === app.selected.date)
+      .reduce((acc, row) => {
+          acc[row.stcofips] = row.adj_urate;
+        return acc;
+      }, {});
+
+      console.log(currentYearFips2Urate);
+    
+    for (var component in app.components) {
+        if (app.components[component].update) {
+            app.components[component].update()
+        }
+    }
   }
 
   // incrementYear: function () {
