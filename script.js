@@ -280,6 +280,10 @@ Controls.prototype = {
       vertical: 10,
     };
 
+    label = d3.select('#slider-text')
+      .append('text')
+      .text('Slide the bar to watch the unemployment rate change over time.');
+
     sliderTime = d3.sliderBottom()
       .min(dates.min)
       .max(dates.max)
@@ -343,7 +347,7 @@ app = {
       .style('opacity', 0)
       .remove();
 
-    d3.select('#main')
+    d3.selectAll('#main')
       .style('opacity', 0)
       .style('display', 'block')
       .transition()
@@ -366,6 +370,10 @@ app = {
 
     app.components.Rug = main.makeRug(app.data.urates);
     app.components.Map = main.makeMap(app.data.shp);
+
+    barCaption = d3.select('#bar-label')
+      .append('text')
+      .text("These charts show how this county's industry mix compares to the national aggregate.")
     app.components.natlBar = new IndustryBar('#bar1', app.data.natl_industry);
     app.components.ctyBar = new IndustryBar('#bar2', app.data.cty_industry);
 
