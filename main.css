@@ -28,6 +28,7 @@
   .title {
     font-family: 'Lato';
     font-size:large;
+    align-self: center;
   }
 
   .title.subtitle {
@@ -73,9 +74,8 @@
 
   .tooltip {
     position: absolute;     
-    text-align: center;     
-    width: 80px;          
-    height: 14px;         
+    text-align: center;    
+    box-sizing: content-box; 
     padding: 2px;       
     border: 0px;        
     pointer-events: none;

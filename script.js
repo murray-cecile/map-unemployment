@@ -43,7 +43,7 @@ main = {
 
   mouseOutHandler: function() {
     main.highlight(null);
-    d3.select('.tooltip on')
+    d3.select('tooltip on')
       .transition()
       .duration(200)
       .attr('opacity', '0');
@@ -66,6 +66,8 @@ main = {
             .attr('width', margin.left + width + margin.right)
             .attr('height', margin.top + height + margin.bottom);
     
+    // svg.append('text').text("Unemployment Rate").attr('class', 'title');
+
     const yScale = d3.scaleLinear()
                     .domain([0, d3.max(urates, p => p.adj_urate)])
                     .range([height, margin.bottom]);
@@ -74,7 +76,7 @@ main = {
                     .domain([0, 1])
                     .range([0, width]);
   
-    tooltip = d3.select("#map-container").append("text") .attr("class", "tooltip");
+    tooltip = d3.select("#rug").append("text") .attr("class", "tooltip");
 
     svg.selectAll('rect')
       .data(urates)
@@ -89,10 +91,7 @@ main = {
       .on("mouseover", main.rugMouseOverHandler)
       .on("mouseout", main.mouseOutHandler);  
 
-    svg.select('#rug')
-      .append('text')
-      .text("Unemployment Rate")
-      .attr('class', 'title');
+
       
   },
 
@@ -373,7 +372,7 @@ app = {
 
     barCaption = d3.select('#bar-label')
       .append('text')
-      .text("These charts show how this county's industry mix compares to the national aggregate.")
+      .text("These charts show how this county's industry mix compares to the national aggregate.");
     app.components.natlBar = new IndustryBar('#bar1', app.data.natl_industry);
     app.components.ctyBar = new IndustryBar('#bar2', app.data.cty_industry);
 
@@ -393,6 +392,13 @@ app = {
           acc[row.stcofips] = row.adj_urate;
         return acc;
       }, {});
+
+    fips2Urate = app.data.urates.reduce((acc, row) => {
+      acc[row.stcofips + '-' + row.year + '-' + row.month] = row.adj_urate;
+      return acc;
+    }, {});
+
+    // console.log(fips2Urate);
 
     app.components.Rug = main.updateRug(app.data.max_urate, app.globals.selected.year, app.globals.selected.month);
     app.components.Map = main.updateMap(currentYearFips2Urate, app.data.max_urate);
