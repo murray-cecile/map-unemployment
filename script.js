@@ -88,6 +88,11 @@ main = {
       .attr('id', d => 'rug-' + d.stcofips)
       .on("mouseover", main.rugMouseOverHandler)
       .on("mouseout", main.mouseOutHandler);  
+
+    svg.select('#rug')
+      .append('text')
+      .text("Unemployment Rate")
+      .attr('class', 'title');
       
   },
 
@@ -280,7 +285,7 @@ Controls.prototype = {
       .max(dates.max)
       .step(1000 * 60 * 60 * 24 * 30)
       .width(sliderWidth - 2 * margins.horizontal)
-      .tickFormat(d3.timeFormat('%Y'))
+      .tickFormat(d3.timeFormat('%B %Y'))
       // .tickValues(dates.range)
       .default(new Date(2017, 1))
       .on('onchange', val => {
@@ -318,7 +323,7 @@ app = {
       available: {
         years: '',
         dates: {
-          min: new Date(2007, 0),
+          min: new Date(2017, 0),
           max: new Date(2017, 11)
         }
       },
