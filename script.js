@@ -1,49 +1,64 @@
 // CECILE MURRAY
 // References at the bottom
 
-
-
 main = {
+
+  tooltip: '',
+  fips2Name: '',
+  urateScale: '',
+  colorScale: '',
+  year: 2017,
+  month: 1,
+  timeId: '2017-02',
+
+
+  makeScales: function (maxUrate){
+    main.urateScale = d3.scaleLinear()
+    .domain([0, maxUrate])
+    .range([1, 0]);
+    main.colorScale = d => d3.interpolatePlasma(main.urateScale(d));
+  },
 
   highlight: function(stcofips) {
     if (stcofips==null) {
       d3.selectAll('.highlight').classed('highlight', false);
     } else {
-      d3.select('#ctypath-' + stcofips, '#rug-' + stcofips).classed('highlight', true);
+      d3.select('#ctypath-' + stcofips).classed('highlight', true);
+      d3.select('#rug-' + stcofips + '-' + main.timeId)
+        .classed('highlight rug', true);
       // console.log('#rug-' + stcofips);
       // console.log('#ctypath-' + stcofips);
     }
   },
 
-  makeTooltip: function(d, tooltip) {
-    tooltip.transition()    
+  makeTooltip: function() {
+    main.tooltip = d3.select("#map-container")
+      .append("text")
+      .attr("class", "tooltip");
+  },  
+
+  showTooltip: function(stcofips) {
+    main.tooltip.transition()    
       .duration(200)    
-      .attr('class', 'tooltip on');
-    tooltip.html(d.properties.NAME)  
+      .attr('class', 'tooltip-on');
+    main.tooltip.html(stcofips)  
       .style("left", (d3.event.pageX) + "px")   
       .style("top", (d3.event.pageY - 28) + "px");
   },
 
-  mapMouseOverHandler: function (d, tooltip) {
-    if (d.properties){
+  mouseOverHandler: function (d) {
+    if (d.stcofips){
+      stcofips = d.stcofips;
+    } else {
       stcofips = d.properties.GEOID;
-      main.highlight(stcofips);
-      main.makeTooltip(d, tooltip);
-    } else if (d.year) {
-      // console.log(this);
-      // stcofips = this.id.split('-')[1];
-      // main.highlight(stcofips);
-    }
-  },
-
-  rugMouseOverHandler: function() {
-    stcofips = this.id.split('-')[1];
+    };
     main.highlight(stcofips);
+    main.showTooltip(main.fips2Name[stcofips])
   },
 
   mouseOutHandler: function() {
     main.highlight(null);
-    d3.select('tooltip on')
+    d3.select('.tooltip-on')
       .transition()
       .duration(200)
       .attr('opacity', '0');
@@ -51,7 +66,7 @@ main = {
 
 
   // RUG
-  makeRug: function (urates) {
+  makeRug: function (urates, maxUrate) {
 
     const width = 75;
     const height = 600;
@@ -69,15 +84,13 @@ main = {
     // svg.append('text').text("Unemployment Rate").attr('class', 'title');
 
     const yScale = d3.scaleLinear()
-                    .domain([0, d3.max(urates, p => p.adj_urate)])
+                    .domain([0, maxUrate])
                     .range([height, margin.bottom]);
     
     const xScale = d3.scaleLinear()
                     .domain([0, 1])
                     .range([0, width]);
   
-    tooltip = d3.select("#rug").append("text") .attr("class", "tooltip");
-
     svg.selectAll('rect')
       .data(urates)
       .enter()
@@ -86,27 +99,21 @@ main = {
       .attr('y', d => yScale(d.adj_urate))
       .attr('width', 40)
       .attr('height', 0.5)
+      .attr('fill',  d => main.colorScale(d.adj_urate))
       .attr('opacity', 0)
-      .attr('id', d => 'rug-' + d.stcofips)
-      .on("mouseover", main.rugMouseOverHandler)
-      .on("mouseout", main.mouseOutHandler);  
-
-
+      .attr('id', d => 'rug-' + d.stcofips + '-' + d.year + '-' + d.month);  
       
   },
 
-  updateRug: function(maxUrate, year, month) {
-
-    const urateScale = d3.scaleLinear()
-    .domain([0, maxUrate])
-    .range([1, 0]);
-
-    const colorScale = d => d3.interpolatePlasma(urateScale(d));
+  updateRug: function(year, month) {
 
     d3.selectAll('#rug rect')
-      .attr('fill',  d => colorScale(d.adj_urate))
-      .attr('opacity', d => 1 * (d.year === year & d.month - 1 === month));
-      // .classed('rug-active', d => d.year === year & d.month - 1 === month);
+      .attr('opacity', d => 1 * (d.year === year & d.month - 1 === month))
+      .on("mouseover", d => {if (d.year === year & d.month - 1 === month) {
+                                main.mouseOverHandler(d);}
+                            })
+      .on("mouseout", main.mouseOutHandler);
+
   },
 
   // MAP
@@ -127,8 +134,6 @@ main = {
     
     geoGenerator = d3.geoPath().projection(d3.geoAlbersUsa());
 
-    tooltip = d3.select("#map-container").append("text") .attr("class", "tooltip");
-
     svg.selectAll('path')
       .data(shp.features)
       .enter()
@@ -136,24 +141,15 @@ main = {
       .attr('d', d => geoGenerator(d))
       .attr('id', d => 'ctypath-' + d.properties.GEOID)
       .attr('opacity', 0)
-      .on("mouseover", d => main.mapMouseOverHandler(d, tooltip))
+      .on("mouseover", d => main.mouseOverHandler(d))
       .on("mouseout", main.mouseOutHandler);
   },
 
-  updateMap: function(fips2Value, maxUrate) {
-
-    const urateScale = d3.scaleLinear()
-                      .domain([0, maxUrate])
-                      .range([1, 0]);
-
-    const colorScale = d => d3.interpolatePlasma(urateScale(d));  
-    
-    tooltip = d3.select("#map-container").append("text") .attr("class", "tooltip");
-    
+  updateMap: function(fips2Value) {
+      
     d3.selectAll('#map path')
-      .attr('fill', d => colorScale(fips2Value[d.properties.GEOID]))
-      .attr('opacity', 1)
-      .on("click", d => main.makeTooltip(d, tooltip));
+      .attr('fill', d => main.colorScale(fips2Value[d.properties.GEOID]))
+      .attr('opacity', 1);
 
   }
 
@@ -367,8 +363,16 @@ app = {
 
     app.components.Controls = new Controls(app.globals.available.dates);
 
-    app.components.Rug = main.makeRug(app.data.urates);
+    app.components.Tooltip = main.makeTooltip();
+    main.makeScales(app.data.max_urate);
+
+    app.components.Rug = main.makeRug(app.data.urates, app.data.max_urate);
     app.components.Map = main.makeMap(app.data.shp);
+
+    main.fips2Name = app.data.shp.features.reduce((acc, row) => {
+      acc[row.properties.GEOID] = row.properties.NAME;
+      return acc;
+    }, {});
 
     barCaption = d3.select('#bar-label')
       .append('text')
@@ -393,15 +397,13 @@ app = {
         return acc;
       }, {});
 
-    fips2Urate = app.data.urates.reduce((acc, row) => {
-      acc[row.stcofips + '-' + row.year + '-' + row.month] = row.adj_urate;
-      return acc;
-    }, {});
+    // fips2Urate = app.data.urates.reduce((acc, row) => {
+    //   acc[row.stcofips + '-' + row.year + '-' + row.month] = row.adj_urate;
+    //   return acc;
+    // }, {});
 
-    // console.log(fips2Urate);
-
-    app.components.Rug = main.updateRug(app.data.max_urate, app.globals.selected.year, app.globals.selected.month);
-    app.components.Map = main.updateMap(currentYearFips2Urate, app.data.max_urate);
+    app.components.Rug = main.updateRug(app.globals.selected.year, app.globals.selected.month);
+    app.components.Map = main.updateMap(currentYearFips2Urate);
 
 
   }

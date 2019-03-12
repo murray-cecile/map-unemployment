@@ -71,6 +71,11 @@
     fill:#17E849;
   }
 
+  .highlight.rug {
+    stroke: #17E849;
+    stroke-width: 2px;
+  }
+
 
   .tooltip {
     position: absolute;     
@@ -82,7 +87,13 @@
     opacity: 0;
   }
 
-  .tooltip.on {
+  .tooltip-on {
+    position: absolute;     
+    text-align: center;    
+    box-sizing: content-box; 
+    padding: 2px;       
+    border: 0px;        
+    pointer-events: none;
     background: #ffffff;
     opacity: 0.9;
   }
