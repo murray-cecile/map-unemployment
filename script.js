@@ -19,6 +19,12 @@ main = {
     main.colorScale = d => d3.interpolatePlasma(main.urateScale(d));
   },
 
+  makeTooltip: function() {
+    main.tooltip = d3.select("#map-container")
+      .append("text")
+      .attr("class", "tooltip");
+  },  
+
   highlight: function(stcofips) {
     if (stcofips==null) {
       d3.selectAll('.highlight').classed('highlight', false);
@@ -31,17 +37,11 @@ main = {
     }
   },
 
-  makeTooltip: function() {
-    main.tooltip = d3.select("#map-container")
-      .append("text")
-      .attr("class", "tooltip");
-  },  
-
-  showTooltip: function(stcofips) {
+  showTooltip: function(name) {
     main.tooltip.transition()    
       .duration(200)    
       .attr('class', 'tooltip-on');
-    main.tooltip.html(stcofips)  
+    main.tooltip.html(name)  
       .style("left", (d3.event.pageX) + "px")   
       .style("top", (d3.event.pageY - 28) + "px");
   },
