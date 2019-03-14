@@ -145,12 +145,12 @@ qcew <- dat %>% select(area_fips, industry_code, year,
   mutate(industry_code = as.character(industry_code)) %>% 
   left_join(qcew_naics, by="industry_code") %>% 
   mutate(totemp = ifelse(industry_code == "10", annual_avg_emplvl, NA)) %>% 
-  arrange(year, stcofips) %>% fill(totemp) %>% 
+  arrange(stcofips, year, industry_code) %>% fill(totemp) %>% 
   mutate(industry_share = ifelse(totemp > 0, annual_avg_emplvl / totemp, 0)) %>% 
   dplyr::rename(industry_name = industry_title) %>% 
   filter(industry_name != "Total, all industries") %>% 
-  arrange(year, stcofips, industry_name) %>% 
-  group_by(year, stcofips) %>% mutate(cshare = cumsum(industry_share))
+  arrange(stcofips, year, industry_name) %>% 
+  group_by(stcofips, year) %>% mutate(cshare = cumsum(industry_share)) 
 
 qcew %>% filter(industry_code != 10, year == 2017, substr(stcofips, 1, 2) == "39") %>% 
   write_json_there("qcew-oh17.json")

@@ -154,13 +154,6 @@ main = {
 
 };
 
-
-IndustryBar = function (selector, industry_data) {
-  yearData = industry_data.filter(d => d.year === app.globals.selected.year);
-  console.log(yearData);
-  this.setup(selector, yearData);
-};
-
 // word wrap from https://bl.ocks.org/mbostock/7555321
 function wrap(text, width) {
   text.each(function() {
@@ -186,9 +179,23 @@ function wrap(text, width) {
   })
 };
 
+IndustryBar = function (selector, industry_data) {
+  currentData = industry_data.filter(d => d.year === app.globals.selected.year);
+
+  if (selector === '#bar1') {
+    currentData = currentData.filter(d => d.month === app.globals.selected.date);
+  } else if (selector === '#bar2') {
+    currentData = currentData.filter(d => d.stcofips === app.globals.selected.stcofips);
+  };
+  console.log(currentData);
+
+  this.setup(selector, currentData);
+};
+
+
 IndustryBar.prototype = {
   
-  setup: function (selector, industry_data) {
+  setup: function (selector, currentData) {
       chart = this;
 
       margin = { top: 20, right: 20, bottom: 100, left: 20 };
@@ -203,7 +210,7 @@ IndustryBar.prototype = {
           .append('g')
           .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-      const industries = [ ... new Set(industry_data.map(x => x.industry_name))]; // https://codeburst.io/javascript-array-distinct-5edc93501dc4
+      const industries = [ ... new Set(currentData.map(x => x.industry_name))]; // https://codeburst.io/javascript-array-distinct-5edc93501dc4
   
       chart.scales = {
           x: d3.scaleBand()
@@ -214,14 +221,13 @@ IndustryBar.prototype = {
               .range([height, 0]),
           width: d3.scaleLinear()
               .domain([0, 1])
-              .range([0, width - margin.right]),
+              .range([margin.left, width]),
           color: d3.scaleOrdinal()
               .domain(industries)
               .range(d3.schemeCategory10)
       };
 
       xAxis = d3.axisBottom().scale(chart.scales.x);
-      yAxis = d3.axisLeft().scale(chart.scales.y);
 
       chart.svg.append('g')
           .attr('class', 'x axis')
@@ -230,10 +236,10 @@ IndustryBar.prototype = {
         .selectAll(".tick text")
           .call(wrap, chart.scales.x.bandwidth());
 
-      chart.svg.append('g')
-          .attr('class', 'y axis')
-          .attr('transform', 'translate('+ margin.left + ',0)')
-          .call(yAxis);
+      chart.svg.append('text')
+          .text('Composition of employment by industry')
+          .attr('class', 'y label')
+          .attr('transform', 'translate('+ width / 2 + ',0)');
 
       chart.update(selector);
   },
@@ -242,10 +248,10 @@ IndustryBar.prototype = {
       chart = this;
 
       chart.svg.selectAll(selector + ' rect')
-          .data(yearData)
+          .data(currentData)
           .enter()
           .append('rect')
-          .attr('x', d => chart.scales.width(d.cshare))
+          .attr('x', d => chart.scales.width(d.cshare - d.industry_share))
           .attr('y', d => (height - margin.top) / 2)
           .attr('width', d => chart.scales.width(d.industry_share))
           .attr('height', 50)
@@ -329,9 +335,11 @@ app = {
         }
       },
       selected: { 
-        date: '2017-1',
+        date: '2017-01',
         year: 2017,
-        month: 1 
+        month: 1, 
+        stcofips: '39035',
+        county: 'Cuyahoga'
       }
     },
   
@@ -391,9 +399,9 @@ app = {
     selected = app.components.Controls.getDate();
     app.globals.selected.year = selected.year;
     app.globals.selected.month = selected.month;
-    app.globals.selected.date = selected.year + '-' + selected.month;
+    app.globals.selected.date = selected.year + '-' + 1 * (selected.month + 1 < 10) + (selected.month + 1);
 
-    currentYearFips2Urate = app.data.urates.filter(d => d.year + '-' + (d.month - 1) === app.globals.selected.date)
+    currentYearFips2Urate = app.data.urates.filter(d => d.year + '-' + d.month === app.globals.selected.date)
       .reduce((acc, row) => {
           acc[row.stcofips] = row.adj_urate;
         return acc;

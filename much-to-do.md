@@ -9,6 +9,7 @@
 - apply real color scheme to map
 - create legend for map
 - convert bar charts to stacked bar and make them responsive
+    - x-axis is incorrect
 
 ### STYLE / LABELING
 - need to add state labels to the county tooltip
