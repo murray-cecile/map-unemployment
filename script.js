@@ -227,7 +227,7 @@ IndustryBar.prototype = {
               .range(d3.schemeCategory10)
       };
 
-      xAxis = d3.axisBottom().scale(chart.scales.x);
+      xAxis = d3.axisBottom().scale(chart.scales.width);
 
       chart.svg.append('g')
           .attr('class', 'x axis')
@@ -236,9 +236,15 @@ IndustryBar.prototype = {
         .selectAll(".tick text")
           .call(wrap, chart.scales.x.bandwidth());
 
+      if (selector === '#bar1') {
+        label = 'National composition of employment by industry';
+      } else if (selector === '#bar2') {
+        label = 'Composition of employment in selected county';
+      };
+
       chart.svg.append('text')
-          .text('Composition of employment by industry')
-          .attr('class', 'y label')
+          .text(label)
+          .attr('class', 'text subtitle')
           .attr('transform', 'translate('+ width / 2 + ',0)');
 
       chart.update(selector);
@@ -246,6 +252,14 @@ IndustryBar.prototype = {
 
   update: function (selector) {
       chart = this;
+
+      const barMouseOver = function(d) {
+        d3.select(selector + '-rect-' + d.industry_name)
+          .append('text')
+          .text(d.industry_name)
+          .attr('class', 'tooltip');
+        main.showTooltip(d.industry_name + ', ' + d.industry_share * 100 + '%');
+      };
 
       chart.svg.selectAll(selector + ' rect')
           .data(currentData)
@@ -256,7 +270,9 @@ IndustryBar.prototype = {
           .attr('width', d => chart.scales.width(d.industry_share))
           .attr('height', 50)
           .attr('fill', d => chart.scales.color(d.industry_name))
-          .attr('stroke', '#FFFFFF');
+          .attr('stroke', '#FFFFFF')
+          .attr('id', d => selector + '-rect-' + d.industry_name)
+          .on('mouseover', d => barMouseOver(d)); 
 
   }
 };
