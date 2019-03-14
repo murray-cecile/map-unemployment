@@ -100,11 +100,12 @@ naics2_data <- bls_api(naics2$seriesID, startyear = 2007, endyear = 2018,
 industry_shares <- naics2_data %>% 
   select(year, month, industry_name, value) %>% 
   mutate(tot_nonfarm = ifelse(industry_name == "Total nonfarm", value, NA)) %>% 
-  arrange(month) %>% fill(tot_nonfarm) %>% 
-  mutate(industry_share = value / tot_nonfarm) 
+  arrange(month, industry_name) %>% fill(tot_nonfarm) %>% 
+  mutate(industry_share = value / tot_nonfarm) %>% 
+  filter(industry_name != "Total nonfarm") %>% 
+  group_by(month) %>% mutate(cshare = cumsum(industry_share))
 
-industry_shares %>% filter(industry_name != "Total nonfarm") %>% 
-  write_json_there("national_industry_shares_07-18.json")
+industry_shares %>% write_json_there("national_industry_shares_07-18.json")
 
 #===============================================================================#
 # QCEW API
@@ -146,7 +147,10 @@ qcew <- dat %>% select(area_fips, industry_code, year,
   mutate(totemp = ifelse(industry_code == "10", annual_avg_emplvl, NA)) %>% 
   arrange(year, stcofips) %>% fill(totemp) %>% 
   mutate(industry_share = ifelse(totemp > 0, annual_avg_emplvl / totemp, 0)) %>% 
-  dplyr::rename(industry_name = industry_title)
+  dplyr::rename(industry_name = industry_title) %>% 
+  filter(industry_name != "Total, all industries") %>% 
+  arrange(year, stcofips, industry_name) %>% 
+  group_by(year, stcofips) %>% mutate(cshare = cumsum(industry_share))
 
 qcew %>% filter(industry_code != 10, year == 2017, substr(stcofips, 1, 2) == "39") %>% 
   write_json_there("qcew-oh17.json")

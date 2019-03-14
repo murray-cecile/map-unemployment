@@ -29,11 +29,10 @@ main = {
     if (stcofips==null) {
       d3.selectAll('.highlight').classed('highlight', false);
     } else {
-      d3.select('#ctypath-' + stcofips).classed('highlight', true);
+      d3.select('#ctypath-' + stcofips)
+        .classed('highlight', true);
       d3.select('#rug-' + stcofips + '-' + main.timeId)
         .classed('highlight rug', true);
-      // console.log('#rug-' + stcofips);
-      // console.log('#ctypath-' + stcofips);
     }
   },
 
@@ -158,7 +157,7 @@ main = {
 
 IndustryBar = function (selector, industry_data) {
   yearData = industry_data.filter(d => d.year === app.globals.selected.year);
-  // console.log(yearData);
+  console.log(yearData);
   this.setup(selector, yearData);
 };
 
@@ -194,8 +193,8 @@ IndustryBar.prototype = {
 
       margin = { top: 20, right: 20, bottom: 100, left: 20 };
 
-      width = 600 - margin.left - margin.right;
-      height = 400 - margin.top - margin.bottom;
+      width = 900 - margin.left - margin.right;
+      height = 200 - margin.top - margin.bottom;
 
       chart.svg = d3.select(selector)
           .append('svg')
@@ -211,11 +210,14 @@ IndustryBar.prototype = {
                .domain(industries)
                .range([margin.left, width]),
           y: d3.scaleLinear()
-              .domain([0, d3.max(industry_data, d => d.industry_share)])
+              .domain([0, 1])
               .range([height, 0]),
-          height: d3.scaleLinear()
-              .domain([0, d3.max(industry_data, d => d.industry_share)])
-              .range([0, height])
+          width: d3.scaleLinear()
+              .domain([0, 1])
+              .range([0, width - margin.right]),
+          color: d3.scaleOrdinal()
+              .domain(industries)
+              .range(d3.schemeCategory10)
       };
 
       xAxis = d3.axisBottom().scale(chart.scales.x);
@@ -243,11 +245,11 @@ IndustryBar.prototype = {
           .data(yearData)
           .enter()
           .append('rect')
-          .attr('x', d => chart.scales.x(d.industry_name))
-          .attr('y', d => height - chart.scales.height(d.industry_share))
-          .attr('width', chart.scales.x.bandwidth())
-          .attr('height', d => chart.scales.height(d.industry_share))
-          .attr('fill', "#217FBE")
+          .attr('x', d => chart.scales.width(d.cshare))
+          .attr('y', d => (height - margin.top) / 2)
+          .attr('width', d => chart.scales.width(d.industry_share))
+          .attr('height', 50)
+          .attr('fill', d => chart.scales.color(d.industry_name))
           .attr('stroke', '#FFFFFF');
 
   }
