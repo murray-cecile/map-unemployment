@@ -1,70 +1,13 @@
 // CECILE MURRAY
 // References at the bottom
 
-main = {
-
-  tooltip: '',
-  fips2Name: '',
-  urateScale: '',
-  colorScale: '',
-  year: 2017,
-  month: 1,
-  timeId: '2017-02',
-
-
-  makeScales: function (maxUrate){
-    main.urateScale = d3.scaleLinear()
-    .domain([0, maxUrate])
-    .range([1, 0]);
-    main.colorScale = d => d3.interpolatePlasma(main.urateScale(d));
-  },
-
-  makeTooltip: function() {
-    main.tooltip = d3.select("#map-container")
-      .append("text")
-      .attr("class", "tooltip");
-  },  
-
-  highlight: function(stcofips) {
-    if (stcofips==null) {
-      d3.selectAll('.highlight').classed('highlight', false);
-    } else {
-      d3.select('#ctypath-' + stcofips)
-        .classed('highlight', true);
-      d3.select('#rug-' + stcofips + '-' + main.timeId)
-        .classed('highlight rug', true);
-    }
-  },
-
-  showTooltip: function(name) {
-    main.tooltip.transition()    
-      .duration(200)    
-      .attr('class', 'tooltip-on');
-    main.tooltip.html(name)  
-      .style("left", (d3.event.pageX) + "px")   
-      .style("top", (d3.event.pageY - 28) + "px");
-  },
-
-  mouseOverHandler: function (d) {
-    if (d.stcofips){
-      stcofips = d.stcofips;
-    } else {
-      stcofips = d.properties.GEOID;
-    };
-    main.highlight(stcofips);
-    main.showTooltip(main.fips2Name[stcofips])
-  },
-
-  mouseOutHandler: function() {
-    main.highlight(null);
-    d3.select('.tooltip-on')
-      .transition()
-      .duration(200)
-      .attr('opacity', '0');
-  },
-
 
   // RUG
+Rug = function(urates, maxUrate) {
+  this.makeRug(urates, maxUrate);
+};
+
+Rug.prototype = {
   makeRug: function (urates, maxUrate) {
 
     const width = 75;
@@ -98,7 +41,7 @@ main = {
       .attr('y', d => yScale(d.adj_urate))
       .attr('width', 40)
       .attr('height', 0.5)
-      .attr('fill',  d => main.colorScale(d.adj_urate))
+      .attr('fill',  d => app.colorScale(d.adj_urate))
       .attr('opacity', 0)
       .attr('id', d => 'rug-' + d.stcofips + '-' + d.year + '-' + d.month);  
       
@@ -109,13 +52,20 @@ main = {
     d3.selectAll('#rug rect')
       .attr('opacity', d => 1 * (d.year === year & d.month - 1 === month))
       .on("mouseover", d => {if (d.year === year & d.month - 1 === month) {
-                                main.mouseOverHandler(d);}
+                                app.mouseOverHandler(d);
+                              }
                             })
-      .on("mouseout", main.mouseOutHandler);
+      .on("mouseout", app.mouseOutHandler);
 
-  },
+  }
+};
 
-  // MAP
+// MAP
+Map = function(shp, fips2Value) {
+  this.makeMap(shp);
+};
+
+Map.prototype = {
   makeMap: function (shp) {
 
     const width = 850;
@@ -140,18 +90,17 @@ main = {
       .attr('d', d => geoGenerator(d))
       .attr('id', d => 'ctypath-' + d.properties.GEOID)
       .attr('opacity', 0)
-      .on("mouseover", d => main.mouseOverHandler(d))
-      .on("mouseout", main.mouseOutHandler);
+      .on("mouseover", d => app.mouseOverHandler(d))
+      .on("mouseout", app.mouseOutHandler);
   },
 
   updateMap: function(fips2Value) {
       
     d3.selectAll('#map path')
-      .attr('fill', d => main.colorScale(fips2Value[d.properties.GEOID]))
+      .attr('fill', d => app.colorScale(fips2Value[d.properties.GEOID]))
       .attr('opacity', 1);
 
   }
-
 };
 
 // word wrap from https://bl.ocks.org/mbostock/7555321
@@ -187,7 +136,6 @@ IndustryBar = function (selector, industry_data) {
   } else if (selector === '#bar2') {
     currentData = currentData.filter(d => d.stcofips === app.globals.selected.stcofips);
   };
-  console.log(currentData);
 
   this.setup(selector, currentData);
 };
@@ -258,7 +206,7 @@ IndustryBar.prototype = {
           .append('text')
           .text(d.industry_name)
           .attr('class', 'tooltip');
-        main.showTooltip(d.industry_name + ', ' + d.industry_share * 100 + '%');
+        app.showTooltip(d.industry_name + ', ' + d.industry_share * 100 + '%');
       };
 
       chart.svg.selectAll(selector + ' rect')
@@ -285,8 +233,8 @@ Controls = function (dates) {
 Controls.prototype = {
 
   selected: {
-    year: 2017,
-    month: 1
+    year: '',
+    month: ''
   },
 
   setup: function(dates) {
@@ -303,6 +251,9 @@ Controls.prototype = {
       .append('text')
       .text('Slide the bar to watch the unemployment rate change over time.');
 
+    this.selected.year = dates.defaultYear;
+    this.selected.month = dates.defaultMonth;
+
     sliderTime = d3.sliderBottom()
       .min(dates.min)
       .max(dates.max)
@@ -310,7 +261,7 @@ Controls.prototype = {
       .width(sliderWidth - 2 * margins.horizontal)
       .tickFormat(d3.timeFormat('%B %Y'))
       // .tickValues(dates.range)
-      .default(new Date(2017, 1))
+      .default(new Date(dates.defaultYear, dates.defaultMonth))
       .on('onchange', val => {
         d3.select('#slider-label').text(d3.timeFormat('%B %Y')(val));
         this.selected.year = val.getFullYear();
@@ -344,10 +295,11 @@ app = {
 
   globals: {
       available: {
-        years: '',
         dates: {
           min: new Date(2017, 0),
-          max: new Date(2017, 11)
+          max: new Date(2017, 11),
+          defaultYear: 2017,
+          defaultMonth: 1
         }
       },
       selected: { 
@@ -359,6 +311,60 @@ app = {
       }
     },
   
+    fips2Name: '',
+    urateScale: '',
+    colorScale: '',
+  
+    makeScales: function (maxUrate){
+      app.urateScale = d3.scaleLinear()
+      .domain([0, maxUrate])
+      .range([1, 0]);
+      app.colorScale = d => d3.interpolatePlasma(app.urateScale(d));
+    },
+  
+    makeTooltip: function() {
+      app.components.tooltip = d3.select("#map-container")
+        .append("text")
+        .attr("class", "tooltip");
+    },  
+  
+    highlight: function(stcofips) {
+      if (stcofips==null) {
+        d3.selectAll('.highlight').classed('highlight', false);
+      } else {
+        d3.select('#ctypath-' + stcofips)
+          .classed('highlight', true);
+        d3.select('#rug-' + stcofips + '-' + app.globals.selected.date)
+          .classed('highlight rug', true);
+      }
+    },
+  
+    showTooltip: function(name) {
+      app.components.tooltip.transition()    
+        .duration(200)    
+        .attr('class', 'tooltip-on');
+      app.components.tooltip.html(name)  
+        .style("left", (d3.event.pageX) + "px")   
+        .style("top", (d3.event.pageY - 28) + "px");
+    },
+  
+    mouseOverHandler: function (d) {
+      if (d.stcofips){
+        stcofips = d.stcofips;
+      } else {
+        stcofips = d.properties.GEOID;
+      };
+      app.highlight(stcofips);
+      app.showTooltip(app.fips2Name[stcofips])
+    },
+  
+    mouseOutHandler: function() {
+      app.highlight(null);
+      d3.select('.tooltip-on')
+        .transition()
+        .duration(200)
+        .attr('opacity', '0');
+    },
 
   initialize: function (data) {
 
@@ -389,13 +395,13 @@ app = {
 
     app.components.Controls = new Controls(app.globals.available.dates);
 
-    app.components.Tooltip = main.makeTooltip();
-    main.makeScales(app.data.max_urate);
+    app.makeTooltip();
+    app.makeScales(app.data.max_urate);
 
-    app.components.Rug = main.makeRug(app.data.urates, app.data.max_urate);
-    app.components.Map = main.makeMap(app.data.shp);
+    app.components.Rug = new Rug(app.data.urates, app.data.max_urate);
+    app.components.Map = new Map(app.data.shp);
 
-    main.fips2Name = app.data.shp.features.reduce((acc, row) => {
+    app.fips2Name = app.data.shp.features.reduce((acc, row) => {
       acc[row.properties.GEOID] = row.properties.NAME;
       return acc;
     }, {});
@@ -416,20 +422,23 @@ app = {
     app.globals.selected.year = selected.year;
     app.globals.selected.month = selected.month;
     app.globals.selected.date = selected.year + '-' + 1 * (selected.month + 1 < 10) + (selected.month + 1);
+    console.log(selected);
+    // the issue here is that I haven't specified the months correctly - leading zeros
 
-    currentYearFips2Urate = app.data.urates.filter(d => d.year + '-' + d.month === app.globals.selected.date)
+    currentYearFips2Urate = app.data.urates.filter(d => d.year + '-' + 1*(d.month < 10) + d.month === app.globals.selected.date)
       .reduce((acc, row) => {
           acc[row.stcofips] = row.adj_urate;
         return acc;
       }, {});
+    console.log(currentYearFips2Urate);
 
     // fips2Urate = app.data.urates.reduce((acc, row) => {
     //   acc[row.stcofips + '-' + row.year + '-' + row.month] = row.adj_urate;
     //   return acc;
     // }, {});
 
-    app.components.Rug = main.updateRug(app.globals.selected.year, app.globals.selected.month);
-    app.components.Map = main.updateMap(currentYearFips2Urate);
+    app.components.Rug.updateRug(app.globals.selected.year, app.globals.selected.month);
+    app.components.Map.updateMap(currentYearFips2Urate);
 
 
   }
