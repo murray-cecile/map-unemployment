@@ -366,6 +366,10 @@ app = {
         .attr('opacity', '0');
     },
 
+    clickHandler: function(d) {
+
+    },
+
   initialize: function (data) {
 
     // loading approach from  https://github.com/cmgiven/gap-reminder-v4
@@ -382,12 +386,28 @@ app = {
       
     const [shp, urates, natl_industry, cty_industry] = data;
     app.data = {
-      'shp': shp,
-      'urates': urates,
-      'natl_industry': natl_industry,
-      'cty_industry': cty_industry,
-      'max_urate': d3.max(urates, p => p.adj_urate)
+      shp: shp,
+      urates: urates,
+      natl_industry: natl_industry,
+      cty_industry: cty_industry,
+      max_urate: d3.max(urates, p => p.adj_urate)
     };
+
+    // pull each period into its own sub-array so I can index in 
+    app.data.uratesYear = d3.nest()
+                            .key(d => d.year + '-' + d.month)
+                            .rollup(v => v.reduce((acc, row) => {
+                              acc[row.stcofips] = row.adj_urate;
+                              return acc;
+                            }, {}))
+                            .map(app.data.urates);
+    console.log(app.data.uratesYear);
+
+     // fips2Urate = app.data.urates.reduce((acc, row) => {
+    //   acc[row.stcofips + '-' + row.year + '-' + row.month] = row.adj_urate;
+    //   return acc;
+    // }, {});
+
 
     app.globals.available.dates.range = d3.range(110).map(function(d) {
       return new Date(2007 + Math.floor(d / 10), d % 12, 1);
@@ -421,21 +441,10 @@ app = {
     selected = app.components.Controls.getDate();
     app.globals.selected.year = selected.year;
     app.globals.selected.month = selected.month;
-    app.globals.selected.date = selected.year + '-' + 1 * (selected.month + 1 < 10) + (selected.month + 1);
-    console.log(selected);
-    // the issue here is that I haven't specified the months correctly - leading zeros
+    app.globals.selected.date = selected.year + '-' + '0' * (selected.month + 1 < 10) + (selected.month + 1);
 
-    currentYearFips2Urate = app.data.urates.filter(d => d.year + '-' + 1*(d.month < 10) + d.month === app.globals.selected.date)
-      .reduce((acc, row) => {
-          acc[row.stcofips] = row.adj_urate;
-        return acc;
-      }, {});
+    currentYearFips2Urate = app.data.uratesYear['$' + app.globals.selected.date];
     console.log(currentYearFips2Urate);
-
-    // fips2Urate = app.data.urates.reduce((acc, row) => {
-    //   acc[row.stcofips + '-' + row.year + '-' + row.month] = row.adj_urate;
-    //   return acc;
-    // }, {});
 
     app.components.Rug.updateRug(app.globals.selected.year, app.globals.selected.month);
     app.components.Map.updateMap(currentYearFips2Urate);
