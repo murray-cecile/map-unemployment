@@ -91,13 +91,14 @@ Map.prototype = {
       .attr('id', d => 'ctypath-' + d.properties.GEOID)
       .attr('opacity', 0)
       .on("mouseover", d => app.mouseOverHandler(d))
-      .on("mouseout", app.mouseOutHandler);
+      .on("mouseout", app.mouseOutHandler)
+      .on("click", d => app.clickHandler(d));
   },
 
   updateMap: function(fips2Value) {
       
     d3.selectAll('#map path')
-      .attr('fill', d => app.colorScale(fips2Value[d.properties.GEOID]))
+      .attr('fill', d => fips2Value[d.properties.GEOID])
       .attr('opacity', 1);
 
   }
@@ -129,24 +130,16 @@ function wrap(text, width) {
 };
 
 IndustryBar = function (selector, industry_data) {
-  currentData = industry_data.filter(d => d.year === app.globals.selected.year);
-
-  if (selector === '#bar1') {
-    currentData = currentData.filter(d => d.month === app.globals.selected.date);
-  } else if (selector === '#bar2') {
-    currentData = currentData.filter(d => d.stcofips === app.globals.selected.stcofips);
-  };
-
-  this.setup(selector, currentData);
+  this.setup(selector, industry_data);
 };
 
 
 IndustryBar.prototype = {
   
-  setup: function (selector, currentData) {
+  setup: function (selector, industry_data) {
       chart = this;
 
-      margin = { top: 20, right: 20, bottom: 100, left: 20 };
+      margin = { top: 20, right: 20, bottom: 40, left: 20 };
 
       width = 900 - margin.left - margin.right;
       height = 200 - margin.top - margin.bottom;
@@ -158,7 +151,7 @@ IndustryBar.prototype = {
           .append('g')
           .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-      const industries = [ ... new Set(currentData.map(x => x.industry_name))]; // https://codeburst.io/javascript-array-distinct-5edc93501dc4
+      const industries = [ ... new Set(industry_data.map(x => x.industry_name))]; // https://codeburst.io/javascript-array-distinct-5edc93501dc4
   
       chart.scales = {
           x: d3.scaleBand()
@@ -184,22 +177,19 @@ IndustryBar.prototype = {
         .selectAll(".tick text")
           .call(wrap, chart.scales.x.bandwidth());
 
-      if (selector === '#bar1') {
-        label = 'National composition of employment by industry';
-      } else if (selector === '#bar2') {
-        label = 'Composition of employment in selected county';
-      };
-
-      chart.svg.append('text')
-          .text(label)
-          .attr('class', 'text subtitle')
-          .attr('transform', 'translate('+ width / 2 + ',0)');
-
-      chart.update(selector);
+      chart.update(selector, industry_data);
   },
 
-  update: function (selector) {
+  update: function (selector, industry_data) {
       chart = this;
+
+      currentData = industry_data.filter(d => d.year === app.globals.selected.year);
+
+      if (selector === '#bar1') {
+        currentData = currentData.filter(d => d.month === app.globals.selected.date);
+      } else if (selector === '#bar2') {
+        currentData = currentData.filter(d => d.stcofips === app.globals.selected.stcofips);
+      };
 
       const barMouseOver = function(d) {
         d3.select(selector + '-rect-' + d.industry_name)
@@ -209,18 +199,33 @@ IndustryBar.prototype = {
         app.showTooltip(d.industry_name + ', ' + d.industry_share * 100 + '%');
       };
 
-      chart.svg.selectAll(selector + ' rect')
-          .data(currentData)
-          .enter()
-          .append('rect')
-          .attr('x', d => chart.scales.width(d.cshare - d.industry_share))
-          .attr('y', d => (height - margin.top) / 2)
-          .attr('width', d => chart.scales.width(d.industry_share))
-          .attr('height', 50)
-          .attr('fill', d => chart.scales.color(d.industry_name))
-          .attr('stroke', '#FFFFFF')
-          .attr('id', d => selector + '-rect-' + d.industry_name)
-          .on('mouseover', d => barMouseOver(d)); 
+      bars = chart.svg.selectAll(selector + ' rect')
+          .data(currentData);
+      
+      newData = bars.enter().append('rect');
+      former = bars.exit();
+      current = bars.merge(newData);
+
+      current.attr('x', d => chart.scales.width(d.cshare - d.industry_share))
+              .attr('y', d => (height - margin.top) / 2)
+              .attr('width', d => chart.scales.width(d.industry_share))
+              .attr('height', 50)
+              .attr('fill', d => chart.scales.color(d.industry_name))
+              .attr('stroke', '#FFFFFF')
+              .attr('id', d => selector + '-rect-' + d.industry_name)
+              .on('mouseover', d => barMouseOver(d)); 
+
+      if (selector === '#bar1') {
+        label = 'National composition of employment by industry';
+      } else if (selector === '#bar2') {
+        label = 'Composition of employment in ' + app.globals.selected.county;
+      };
+
+      chart.svg.append('text')
+          .text(label)
+          .attr('class', 'text subtitle')
+          .attr('transform', 'translate('+ width / 2 + ',0)');
+        
 
   }
 };
@@ -307,7 +312,7 @@ app = {
         year: 2017,
         month: 1, 
         stcofips: '39035',
-        county: 'Cuyahoga'
+        county: 'Cuyahoga County, OH'
       }
     },
   
@@ -330,7 +335,10 @@ app = {
   
     highlight: function(stcofips) {
       if (stcofips==null) {
-        d3.selectAll('.highlight').classed('highlight', false);
+        d3.selectAll('.highlight')
+          .classed('highlight', false)
+          .transition()
+          .duration(200);
       } else {
         d3.select('#ctypath-' + stcofips)
           .classed('highlight', true);
@@ -367,7 +375,9 @@ app = {
     },
 
     clickHandler: function(d) {
-
+      app.globals.selected.stcofips = d.properties.GEOID;
+      // app.globals.selected.county = app.
+      app.update();
     },
 
   initialize: function (data) {
@@ -393,38 +403,33 @@ app = {
       max_urate: d3.max(urates, p => p.adj_urate)
     };
 
+    app.components.Controls = new Controls(app.globals.available.dates);
+    app.makeTooltip();
+    app.makeScales(app.data.max_urate);
+
     // pull each period into its own sub-array so I can index in 
+    // h/t to Cory Rand for mentioning d3.nest as a way to approach this problem
     app.data.uratesYear = d3.nest()
                             .key(d => d.year + '-' + d.month)
                             .rollup(v => v.reduce((acc, row) => {
-                              acc[row.stcofips] = row.adj_urate;
+                              acc[row.stcofips] = app.colorScale(row.adj_urate);
                               return acc;
                             }, {}))
                             .map(app.data.urates);
-    console.log(app.data.uratesYear);
-
-     // fips2Urate = app.data.urates.reduce((acc, row) => {
-    //   acc[row.stcofips + '-' + row.year + '-' + row.month] = row.adj_urate;
-    //   return acc;
-    // }, {});
-
 
     app.globals.available.dates.range = d3.range(110).map(function(d) {
       return new Date(2007 + Math.floor(d / 10), d % 12, 1);
     });
 
-    app.components.Controls = new Controls(app.globals.available.dates);
-
-    app.makeTooltip();
-    app.makeScales(app.data.max_urate);
-
     app.components.Rug = new Rug(app.data.urates, app.data.max_urate);
     app.components.Map = new Map(app.data.shp);
+
 
     app.fips2Name = app.data.shp.features.reduce((acc, row) => {
       acc[row.properties.GEOID] = row.properties.NAME;
       return acc;
     }, {});
+
 
     barCaption = d3.select('#bar-label')
       .append('text')
@@ -437,6 +442,7 @@ app = {
   },
 
   update: function () {
+    // to do: segment this function into time and place
 
     selected = app.components.Controls.getDate();
     app.globals.selected.year = selected.year;
@@ -444,10 +450,13 @@ app = {
     app.globals.selected.date = selected.year + '-' + '0' * (selected.month + 1 < 10) + (selected.month + 1);
 
     currentYearFips2Urate = app.data.uratesYear['$' + app.globals.selected.date];
-    console.log(currentYearFips2Urate);
 
     app.components.Rug.updateRug(app.globals.selected.year, app.globals.selected.month);
     app.components.Map.updateMap(currentYearFips2Urate);
+    
+    console.log(app.globals.selected.stcofips);
+    // app.components.natlBar.update('#bar1', app.data.natl_industry)
+    app.components.ctyBar.update('#bar2', app.data.cty_industry)
 
 
   }
