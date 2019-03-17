@@ -1,7 +1,7 @@
 // CECILE MURRAY
 // References at the bottom
 
-var drag = d3.drag();
+// var drag = d3.drag();
 
   // RUG
 Rug = function(urates, maxUrate) {
@@ -280,11 +280,11 @@ Controls.prototype = {
       .tickFormat(d3.timeFormat('%B %Y'))
       // .tickValues(dates.range)
       .default(new Date(dates.defaultYear, dates.defaultMonth))
-      .on('drag', val => {
+      .on('onchange', val => {
         d3.select('#slider-label').text(d3.timeFormat('%B %Y')(val));
         this.selected.year = val.getFullYear();
         this.selected.month = val.getMonth();
-        console.log('onchange called');
+        // console.log('onchange called');
         app.update();
       });
 
@@ -390,7 +390,6 @@ app = {
 
     clickHandler: function(d) {
       app.globals.selected.stcofips = d.properties.GEOID;
-      // app.globals.selected.county = app.
       app.update();
     },
 
