@@ -12,16 +12,16 @@
   <script src="https://d3js.org/d3.v5.js"></script>
   <script src="https://unpkg.com/d3-simple-slider"></script>
   <script src="https://d3js.org/d3-dispatch.v1.min.js"></script>
+  <script src="https://d3js.org/d3-drag.v1.min.js"></script>
   <script src="script.js"></script>
   <h2>Mapping U.S. Unemployment</h2>
-  <div id='loading'>Data are loading - this will take some time.</div>
   <div id='main'>
     <div id='intro-text'>
       <p>
         Ten years after the onset of the Great Recession, the national labor market is humming, with the official unemployment rate hovering around 4 percent and wage growth slowly accelerating. However, the rosy national figures mask important variation in labor market trends across industries, occupations, demographic groups, and geographic areas. This variation should matter to policymakers who are concerned about the extent to which different sectors and groups have actually recovered, and the degree to which economic growth is broadly shared.
       </p>
       <p>
-        The map below explores this geographic variation: it shows how the unemployment rate in U.S. counties changed over time. The rug chart to the right shows the distribution of unemployment rates for the counties in the selected time period. Mouse over the map or the rug to see its unemployment rate, or click on a county to see which industries dominated there.
+        This map explores this geographic variation: it shows how the unemployment rate in U.S. counties changed over time. The rug chart to the right shows the distribution of unemployment rates for the counties in the selected time period. Mouse over the map or the rug to see its unemployment rate, or click on a county to see which industries dominated there.
       </p>
     </div>
     <div id='slider-text'></div>
@@ -39,5 +39,6 @@
       <div id='bar2'></div>
     </div>
   </div>
+  <div id='loading'>Data are loading - this will take some time.</div>
 </body>
 </html>

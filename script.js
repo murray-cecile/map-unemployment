@@ -1,6 +1,7 @@
 // CECILE MURRAY
 // References at the bottom
 
+var drag = d3.drag();
 
   // RUG
 Rug = function(urates, maxUrate) {
@@ -151,7 +152,7 @@ IndustryBar.prototype = {
           .append('g')
           .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-      const industries = [ ... new Set(industry_data.map(x => x.industry_name))]; // https://codeburst.io/javascript-array-distinct-5edc93501dc4
+      const industries = [ ... new Set(industry_data.map(x => x.industry_title))]; // https://codeburst.io/javascript-array-distinct-5edc93501dc4
   
       chart.scales = {
           x: d3.scaleBand()
@@ -185,18 +186,16 @@ IndustryBar.prototype = {
 
       currentData = industry_data.filter(d => d.year === app.globals.selected.year);
 
-      if (selector === '#bar1') {
-        currentData = currentData.filter(d => d.month === app.globals.selected.date);
-      } else if (selector === '#bar2') {
+      if (selector === '#bar2') {
         currentData = currentData.filter(d => d.stcofips === app.globals.selected.stcofips);
       };
 
       const barMouseOver = function(d) {
-        d3.select(selector + '-rect-' + d.industry_name)
+        d3.select(selector + '-rect-' + d.industry_title)
           .append('text')
-          .text(d.industry_name)
+          .text(d.industry_title)
           .attr('class', 'tooltip');
-        app.showTooltip(d.industry_name + ', ' + d.industry_share * 100 + '%');
+        app.showTooltip(d.industry_title + ', ' + d.industry_share * 100 + '%');
       };
 
       bars = chart.svg.selectAll(selector + ' rect')
@@ -210,21 +209,34 @@ IndustryBar.prototype = {
               .attr('y', d => (height - margin.top) / 2)
               .attr('width', d => chart.scales.width(d.industry_share))
               .attr('height', 50)
-              .attr('fill', d => chart.scales.color(d.industry_name))
+              .attr('fill', d => chart.scales.color(d.industry_title))
               .attr('stroke', '#FFFFFF')
-              .attr('id', d => selector + '-rect-' + d.industry_name)
+              .attr('id', d => selector + '-rect-' + d.industry_title)
               .on('mouseover', d => barMouseOver(d)); 
 
-      if (selector === '#bar1') {
-        label = 'National composition of employment by industry';
-      } else if (selector === '#bar2') {
-        label = 'Composition of employment in ' + app.globals.selected.county;
+      titleText = {
+        bar1: 'National composition of employment by industry',
+        bar2: 'Composition of employment in selected counties' //+ app.globals.selected.county
       };
 
-      chart.svg.append('text')
-          .text(label)
-          .attr('class', 'text subtitle')
+      if (selector === '#bar1') {
+
+        chart.svg.append('text')
+          .text(titleText.bar1)
+          .attr('class', 'title bar')
           .attr('transform', 'translate('+ width / 2 + ',0)');
+
+      } else if (selector === '#bar2') {
+
+        oldTitle = chart.svg.select('title bar').exit();
+        newTitle = chart.svg.append('text')
+          .text(titleText.bar2)
+          .attr('class', 'title bar')
+          .attr('transform', 'translate('+ width / 2 + ',0)');
+        // currentTitle = chart.svg.merge(newTitle);
+
+      };
+
         
 
   }
@@ -258,6 +270,7 @@ Controls.prototype = {
 
     this.selected.year = dates.defaultYear;
     this.selected.month = dates.defaultMonth;
+    console.log('setup called');
 
     sliderTime = d3.sliderBottom()
       .min(dates.min)
@@ -267,10 +280,11 @@ Controls.prototype = {
       .tickFormat(d3.timeFormat('%B %Y'))
       // .tickValues(dates.range)
       .default(new Date(dates.defaultYear, dates.defaultMonth))
-      .on('onchange', val => {
+      .on('drag', val => {
         d3.select('#slider-label').text(d3.timeFormat('%B %Y')(val));
         this.selected.year = val.getFullYear();
         this.selected.month = val.getMonth();
+        console.log('onchange called');
         app.update();
       });
 
@@ -469,7 +483,7 @@ Promise.all([
   './data/us_counties.geojson',
   './data/adj-urate-2017.json',
   './data/national_industry_shares_07-18.json',
-  './data/qcew-oh17.json'].map(url => fetch(url)
+  './data/qcew-2017.json'].map(url => fetch(url)
   .then(data => data.json())))
   .then(data => app.initialize(data));
 
