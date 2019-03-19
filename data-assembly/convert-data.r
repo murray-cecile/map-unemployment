@@ -33,6 +33,9 @@ ctpop <- get_acs(geography = "county", variable = "B01001_001",
 ctpop %>% select(stcofips, pop) %>% st_drop_geometry() %>% 
   write_json_there("county-population-2017.json")
 
+countydict <- ctpop %>% select(stcofips, NAME) %>% st_drop_geometry() %>% 
+  write_json_there("county_names.json")
+
 #===============================================================================#
 # SMOOTHED COUNTY UNEMPLOYMENT
 #===============================================================================#
@@ -130,8 +133,12 @@ qcew <- dat %>% select(area_fips, industry_code, year, annual_avg_emplvl) %>%
   mutate(industry_share = ifelse(totemp > 0, annual_avg_emplvl / totemp, 0)) %>% 
   filter(industry_title != "Total, all industries") %>%
   arrange(stcofips, year, industry_title) %>%
-  group_by(stcofips, year) %>% mutate(cshare = cumsum(industry_share))
+  group_by(stcofips, year) %>% mutate(cshare = cumsum(industry_share)) 
 
-oh <- qcew %>% filter(industry_code != 10, year == 2017, substr(stcofips, 1, 2) == "39") %>%
-  write_json_there("qcew-oh17.json")
+qcew %>% select(stcofips, year, industry_title, industry_share, cshare) %>% 
+  filter(year == 2017) %>% 
+  write_json_there('qcew-2017.json')
+
+# oh <- qcew %>% filter(industry_code != 10, year == 2017, substr(stcofips, 1, 2) == "39") %>%
+#   write_json_there("qcew-oh17.json")
 

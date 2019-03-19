@@ -361,11 +361,11 @@ app = {
       }
     },
   
-    showTooltip: function(name) {
+    showTooltip: function(stcofips) {
       app.components.tooltip.transition()    
         .duration(200)    
         .attr('class', 'tooltip-on');
-      app.components.tooltip.html(name)  
+      app.components.tooltip.html(app.fips2Name[stcofips])  
         .style("left", (d3.event.pageX) + "px")   
         .style("top", (d3.event.pageY - 28) + "px");
     },
@@ -377,7 +377,7 @@ app = {
         stcofips = d.properties.GEOID;
       };
       app.highlight(stcofips);
-      app.showTooltip(app.fips2Name[stcofips])
+      app.showTooltip(stcofips);
     },
   
     mouseOutHandler: function() {
@@ -407,13 +407,14 @@ app = {
       .transition()
       .style('opacity', 1);
       
-    const [shp, urates, natl_industry, cty_industry] = data;
+    const [shp, urates, natl_industry, cty_industry, cty_names] = data;
     app.data = {
       shp: shp,
       urates: urates,
       natl_industry: natl_industry,
       cty_industry: cty_industry,
-      max_urate: d3.max(urates, p => p.adj_urate)
+      max_urate: d3.max(urates, p => p.adj_urate),
+      cty_names: cty_names
     };
 
     app.components.Controls = new Controls(app.globals.available.dates);
@@ -438,11 +439,10 @@ app = {
     app.components.Map = new Map(app.data.shp);
 
 
-    app.fips2Name = app.data.shp.features.reduce((acc, row) => {
-      acc[row.properties.GEOID] = row.properties.NAME;
+    app.fips2Name = app.data.cty_names.reduce((acc, row) => {
+      acc[row.stcofips] = row.NAME;
       return acc;
     }, {});
-
 
     barCaption = d3.select('#bar-label')
       .append('text')
@@ -482,7 +482,8 @@ Promise.all([
   './data/us_counties.geojson',
   './data/adj-urate-2017.json',
   './data/national_industry_shares_07-18.json',
-  './data/qcew-2017.json'].map(url => fetch(url)
+  './data/qcew-2017.json',
+  './data/county_names.json'].map(url => fetch(url)
   .then(data => data.json())))
   .then(data => app.initialize(data));
 
