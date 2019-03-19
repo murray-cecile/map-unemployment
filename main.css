@@ -13,8 +13,9 @@
 
   .map-container {
     display:flex;
-    max-width: 2000px;
+    max-width: 3000px;
     flex-wrap:wrap;
+    align-items: center;
   }
 
   .bars  {
@@ -26,13 +27,18 @@
 /* TEXT */
 
   .title {
-    font-family: 'Lato';
+    font-family: 'Cabin';
     font-size:large;
     align-self: center;
   }
 
   .title.bar {
     font-size:medium;
+    font-style: normal;
+  }
+
+  .text {
+    font-family: 'Cabin';
   }
 
   .text.legend {

@@ -14,9 +14,9 @@ Rug.prototype = {
     const width = 75;
     const height = 600;
     const margin = {
-      top: 10,
+      top: 50,
       left: 10,
-      right: 10,
+      right: 70,
       bottom: 10
     };
 
@@ -24,28 +24,41 @@ Rug.prototype = {
             .attr('width', margin.left + width + margin.right)
             .attr('height', margin.top + height + margin.bottom);
     
-    // svg.append('text').text("Unemployment Rate").attr('class', 'title');
-
     const yScale = d3.scaleLinear()
-                    .domain([0, maxUrate])
-                    .range([height, margin.bottom]);
+                    .domain([0, maxUrate / 100])
+                    .range([height, margin.top]);
     
     const xScale = d3.scaleLinear()
                     .domain([0, 1])
                     .range([0, width]);
-  
+ 
+    const formatAsPercentage = d3.format("0.0%");
+    const yAxis = d3.axisRight().scale(yScale).tickFormat(formatAsPercentage);
+    
+
     svg.selectAll('rect')
       .data(urates)
       .enter()
       .append('rect')
       .attr('x', xScale(0.5))
-      .attr('y', d => yScale(d.adj_urate))
+      .attr('y', d => yScale(d.adj_urate / 100))
       .attr('width', 40)
       .attr('height', 0.5)
       .attr('fill',  d => app.colorScale(d.adj_urate))
       .attr('opacity', 0)
       .attr('id', d => 'rug-' + d.stcofips + '-' + d.year + '-' + d.month);  
-      
+
+    svg.append('g')
+      .attr('class', 'text axis')
+      .attr('transform', 'translate(' + (width + margin.right/2) + ',' + '0)')
+      .call(yAxis);
+ 
+    d3.selectAll('[text-anchor=middle]').attr('text axis');
+
+    svg.append('text').text("Unemployment\nRate")
+      .attr('class', 'text legend')
+      .attr('transform', 'translate(0,' + 25  + ')');
+ 
   },
 
   updateRug: function(year, month) {
@@ -69,7 +82,7 @@ Map = function(shp, fips2Value) {
 Map.prototype = {
   makeMap: function (shp) {
 
-    const width = 850;
+    const width = 900;
     const height = 600;
     const margin = {
       top: 20,
@@ -82,7 +95,7 @@ Map.prototype = {
             .attr('width', margin.left + width + margin.right)
             .attr('height', margin.top + height + margin.bottom);
     
-    geoGenerator = d3.geoPath().projection(d3.geoAlbersUsa());
+    geoGenerator = d3.geoPath().projection(d3.geoAlbersUsa().scale([1100]));
 
     svg.selectAll('path')
       .data(shp.features)
@@ -93,7 +106,7 @@ Map.prototype = {
       .attr('opacity', 0)
       .on("mouseover", d => app.mouseOverHandler(d))
       .on("mouseout", app.mouseOutHandler)
-      .on("click", d => app.clickHandler(d));
+      .on("click", d => app.clickHandler(d)); 
   },
 
   updateMap: function(fips2Value) {
@@ -143,7 +156,7 @@ IndustryBar.prototype = {
       margin = { top: 20, right: 20, bottom: 40, left: 20 };
 
       width = 900 - margin.left - margin.right;
-      height = 200 - margin.top - margin.bottom;
+      height = 150 - margin.top - margin.bottom;
 
       chart.svg = d3.select(selector)
           .append('svg')
@@ -169,7 +182,8 @@ IndustryBar.prototype = {
               .range(d3.schemeCategory10)
       };
 
-      xAxis = d3.axisBottom().scale(chart.scales.width);
+      const formatAsPercentage = d3.format("0.0%");
+      xAxis = d3.axisBottom().scale(chart.scales.width).tickFormat(formatAsPercentage);
 
       chart.svg.append('g')
           .attr('class', 'x axis')
@@ -178,8 +192,22 @@ IndustryBar.prototype = {
         .selectAll(".tick text")
           .call(wrap, chart.scales.x.bandwidth());
 
-      chart.update(selector, industry_data);
+      titleText = {
+        bar1: 'National share of jobs by major industry',
+        bar2: 'Share of jobs by major industry in ' + app.globals.selected.county
+      };
+
+      if (selector === '#bar1') {
+
+        chart.svg.append('text')
+          .text(titleText.bar1)
+          .attr('class', 'title bar')
+          .attr('transform', 'translate('+ width / 4 + ',' + margin.top + ')');
+
+        chart.update(selector, industry_data);
+      };
   },
+
 
   update: function (selector, industry_data) {
       chart = this;
@@ -214,26 +242,18 @@ IndustryBar.prototype = {
               .attr('id', d => selector + '-rect-' + d.industry_title)
               .on('mouseover', d => barMouseOver(d)); 
 
-      titleText = {
-        bar1: 'National composition of employment by industry',
-        bar2: 'Composition of employment in selected counties' //+ app.globals.selected.county
-      };
+      
+      if (selector === '#bar2') {
 
-      if (selector === '#bar1') {
-
-        chart.svg.append('text')
-          .text(titleText.bar1)
-          .attr('class', 'title bar')
-          .attr('transform', 'translate('+ width / 2 + ',0)');
-
-      } else if (selector === '#bar2') {
-
-        oldTitle = chart.svg.select('title bar').exit();
+        titleText.bar2 = 'Share of jobs by major industry in ' + app.globals.selected.county;
+        console.log(titleText.bar2);
+        
         newTitle = chart.svg.append('text')
           .text(titleText.bar2)
           .attr('class', 'title bar')
-          .attr('transform', 'translate('+ width / 2 + ',0)');
-        // currentTitle = chart.svg.merge(newTitle);
+          .attr('transform', 'translate('+ width / 4 + ',0)');
+        oldTitle = chart.svg.select('title bar').exit();
+        currentTitle = chart.svg.merge(newTitle);
 
       };
 
@@ -257,8 +277,8 @@ Controls.prototype = {
   setup: function(dates) {
 
     // Slider designed based on https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
-    sliderWidth = 800;
-    sliderHeight = 100;
+    sliderWidth = 1100;
+    sliderHeight = 75;
     margins = { 
       horizontal: 30,
       vertical: 10,
@@ -266,7 +286,9 @@ Controls.prototype = {
 
     label = d3.select('#slider-text')
       .append('text')
-      .text('Slide the bar to watch the unemployment rate change over time.');
+      .text('Slide the bar to watch the unemployment rate change over time. Darker colors indicate higher unemployment.');
+
+    sliderObject = this;
 
     this.selected.year = dates.defaultYear;
     this.selected.month = dates.defaultMonth;
@@ -280,13 +302,14 @@ Controls.prototype = {
       .tickFormat(d3.timeFormat('%B %Y'))
       // .tickValues(dates.range)
       .default(new Date(dates.defaultYear, dates.defaultMonth))
-      .on('onchange', val => {
+      .on('onchange', _.debounce(function () { // 
+        val = sliderTime.value();
         d3.select('#slider-label').text(d3.timeFormat('%B %Y')(val));
-        this.selected.year = val.getFullYear();
-        this.selected.month = val.getMonth();
-        // console.log('onchange called');
-        app.update();
-      });
+        console.log(sliderObject);
+        sliderObject.selected.year = sliderTime.value().getFullYear();
+        sliderObject.selected.month = sliderTime.value().getMonth();
+        app.update()
+      }, 250, { 'maxWait': 1000 }));
 
     gTime = d3.select('#slider')
       .append('svg')
@@ -296,9 +319,10 @@ Controls.prototype = {
       .attr('class', 'slider')
       .attr('transform', 'translate(' + margins.horizontal + ',' + margins.vertical + ')');
 
+    d3.select('#slider-label').text(d3.timeFormat('%B %Y')(sliderTime.value()));
+
     gTime.call(sliderTime);
 
-    d3.select('#slider-label').text(d3.timeFormat('%B %Y')(sliderTime.value()));
 
   },
   
@@ -322,17 +346,25 @@ app = {
         }
       },
       selected: { 
-        date: '2017-01',
-        year: 2017,
-        month: 1, 
-        stcofips: '39035',
-        county: 'Cuyahoga County, OH'
+        date: '',
+        year: '',
+        month: '', 
+        stcofips: '',
+        county: ''
       }
     },
   
     fips2Name: '',
     urateScale: '',
     colorScale: '',
+
+    setInitialValues: function () {
+      app.globals.selected.date = '2017-02';
+      app.globals.selected.year = 2017;
+      app.globals.selected.month = 1;
+      app.globals.selected.stcofips = '39035';
+      app.globals.selected.county = 'Cuyahoga County, Ohio';
+    },
   
     makeScales: function (maxUrate){
       app.urateScale = d3.scaleLinear()
@@ -361,11 +393,11 @@ app = {
       }
     },
   
-    showTooltip: function(stcofips) {
+    showTooltip: function(name) {
       app.components.tooltip.transition()    
         .duration(200)    
         .attr('class', 'tooltip-on');
-      app.components.tooltip.html(app.fips2Name[stcofips])  
+      app.components.tooltip.html(name)  
         .style("left", (d3.event.pageX) + "px")   
         .style("top", (d3.event.pageY - 28) + "px");
     },
@@ -376,8 +408,9 @@ app = {
       } else {
         stcofips = d.properties.GEOID;
       };
+      name = app.fips2Name[stcofips];
       app.highlight(stcofips);
-      app.showTooltip(stcofips);
+      app.showTooltip(name);
     },
   
     mouseOutHandler: function() {
@@ -390,6 +423,7 @@ app = {
 
     clickHandler: function(d) {
       app.globals.selected.stcofips = d.properties.GEOID;
+      app.globals.selected.county = app.fips2Name[d.properties.GEOID];
       app.update();
     },
 
@@ -406,6 +440,8 @@ app = {
       .style('display', 'block')
       .transition()
       .style('opacity', 1);
+
+    app.setInitialValues();
       
     const [shp, urates, natl_industry, cty_industry, cty_names] = data;
     app.data = {
@@ -416,6 +452,7 @@ app = {
       max_urate: d3.max(urates, p => p.adj_urate),
       cty_names: cty_names
     };
+
 
     app.components.Controls = new Controls(app.globals.available.dates);
     app.makeTooltip();
@@ -444,9 +481,10 @@ app = {
       return acc;
     }, {});
 
-    barCaption = d3.select('#bar-label')
+    barCaption = d3.select('#bar-text')
       .append('text')
-      .text("These charts show how this county's industry mix compares to the national aggregate.");
+      .text("These charts show how this county's industry mix compares to the national aggregate."); 
+
     app.components.natlBar = new IndustryBar('#bar1', app.data.natl_industry);
     app.components.ctyBar = new IndustryBar('#bar2', app.data.cty_industry);
 
@@ -458,6 +496,7 @@ app = {
     // to do: segment this function into time and place
 
     selected = app.components.Controls.getDate();
+    console.log(selected);
     app.globals.selected.year = selected.year;
     app.globals.selected.month = selected.month;
     app.globals.selected.date = selected.year + '-' + '0' * (selected.month + 1 < 10) + (selected.month + 1);
@@ -467,8 +506,6 @@ app = {
     app.components.Rug.updateRug(app.globals.selected.year, app.globals.selected.month);
     app.components.Map.updateMap(currentYearFips2Urate);
     
-    console.log(app.globals.selected.stcofips);
-    // app.components.natlBar.update('#bar1', app.data.natl_industry)
     app.components.ctyBar.update('#bar2', app.data.cty_industry)
 
 
