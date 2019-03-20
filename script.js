@@ -108,7 +108,7 @@ Map.prototype = {
   },
 
   updateMap: function(fips2Value) {
-      
+     
     d3.selectAll('#map path')
       .attr('fill', d => fips2Value[d.properties.GEOID])
       .attr('opacity', 1);
@@ -576,7 +576,7 @@ app = {
     selected = app.components.Controls.getDate();
     app.globals.selected.year = selected.year;
     app.globals.selected.month = selected.month;
-    app.globals.selected.date = selected.year + '-' + '0' * (selected.month + 1 < 10) + (selected.month + 1);
+    app.globals.selected.date = selected.year + '-' + (selected.month + 1).toString().padStart(2, '0');
 
     currentYearFips2Urate = app.data.uratesYear['$' + app.globals.selected.date];
 
