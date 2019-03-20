@@ -293,7 +293,7 @@ Controls.prototype = {
       .default(new Date(dates.defaultYear, dates.defaultMonth))
       .marks(dates.range)
       .on('onchange', _.debounce(function () { 
-        console.log(d3.select('#slider-label'));
+        // console.log(d3.select('#slider-label'));
         d3.select('#slider-label').text(d3.timeFormat('%B %Y')(sliderTime.value()));
         sliderObject.selected.year = sliderTime.value().getFullYear();
         sliderObject.selected.month = sliderTime.value().getMonth();
@@ -500,7 +500,7 @@ app = {
       app.globals.selected.stcofips = d.properties.GEOID;
       app.globals.selected.county = app.fips2Name[d.properties.GEOID];
       app.updateCounty();
-      console.log(app.globals.selected.stcofips);
+      // console.log(app.globals.selected.stcofips);
     },
 
   initialize: function (data) {
