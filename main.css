@@ -13,15 +13,18 @@
 
   .map-container {
     display:flex;
-    max-width: 3000px;
+    /* max-width: 3000px; */
     flex-wrap:wrap;
     align-items: center;
   }
 
   .bars  {
     display:flex;
+    flex-direction: column;
     flex-wrap:wrap;
-    justify-content:space-between;
+    align-items:flex-start;
+    justify-content: space-around;
+    max-height: 500px;
   }
 
 /* TEXT */
@@ -43,6 +46,10 @@
 
   .text.legend {
     font-size:medium;
+  }
+
+  .text.legend.title {
+    font-family: 'Cabin SemiBold'; 
   }
   
   .text.caption {

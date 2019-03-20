@@ -43,7 +43,7 @@ Rug.prototype = {
       .attr('x', xScale(0.5))
       .attr('y', d => yScale(d.adj_urate / 100))
       .attr('width', 40)
-      .attr('height', 0.5)
+      .attr('height', 1)
       .attr('fill',  d => app.colorScale(d.adj_urate))
       .attr('opacity', 0)
       .attr('id', d => 'rug-' + d.stcofips + '-' + d.year + '-' + d.month);  
@@ -75,14 +75,14 @@ Rug.prototype = {
 };
 
 // MAP
-Map = function(shp, fips2Value) {
+Map = function(shp) {
   this.makeMap(shp);
 };
 
 Map.prototype = {
   makeMap: function (shp) {
 
-    const width = 900;
+    const width = 1000;
     const height = 600;
     const margin = {
       top: 20,
@@ -153,10 +153,10 @@ IndustryBar.prototype = {
   setup: function (selector, industry_data) {
       chart = this;
 
-      margin = { top: 20, right: 20, bottom: 40, left: 20 };
+      margin = { top: 20, right: 20, bottom: 10, left: 20 };
 
-      width = 900 - margin.left - margin.right;
-      height = 150 - margin.top - margin.bottom;
+      width = 900;
+      height = 150;
 
       chart.svg = d3.select(selector)
           .append('svg')
@@ -170,13 +170,13 @@ IndustryBar.prototype = {
       chart.scales = {
           x: d3.scaleBand()
                .domain(industries)
-               .range([margin.left, width]),
+               .range([0, width]),
           y: d3.scaleLinear()
               .domain([0, 1])
-              .range([height, 0]),
+              .range([0, height]),
           width: d3.scaleLinear()
               .domain([0, 1])
-              .range([margin.left, width]),
+              .range([0, width]),
           color: d3.scaleOrdinal()
               .domain(industries)
               .range(d3.schemeCategory10)
@@ -187,25 +187,34 @@ IndustryBar.prototype = {
 
       chart.svg.append('g')
           .attr('class', 'x axis')
-          .attr('transform', 'translate(0,' + height + ')')
-          .call(xAxis)
-        .selectAll(".tick text")
-          .call(wrap, chart.scales.x.bandwidth());
+          .attr('transform', 'translate(0,' + (height/2 + margin.top) + ')')
+          .call(xAxis);
 
-      titleText = {
+      titleText = [{
         bar1: 'National share of jobs by major industry',
-        bar2: 'Share of jobs by major industry in ' + app.globals.selected.county
-      };
+        bar2: 'Share of jobs by major industry in selected county' 
+      }];
+
+      title = chart.svg.selectAll('title bar').data(titleText);
 
       if (selector === '#bar1') {
 
-        chart.svg.append('text')
-          .text(titleText.bar1)
+        title.enter().append('text')
+          .text(d => d.bar1)
           .attr('class', 'title bar')
-          .attr('transform', 'translate('+ width / 4 + ',' + margin.top + ')');
+          .attr('transform', 'translate('+ width / 3 + ',' + margin.top + ')');
 
-        chart.update(selector, industry_data);
+      } else if (selector === '#bar2') {
+        
+        title.enter().append('text')
+        .text(d => d.bar2)
+        .attr('class', 'title bar')
+        .attr('transform', 'translate('+ width / 4 + ',' + margin.top + ')');        
+   
       };
+
+      chart.update(selector, industry_data);
+
   },
 
 
@@ -234,30 +243,13 @@ IndustryBar.prototype = {
       current = bars.merge(newData);
 
       current.attr('x', d => chart.scales.width(d.cshare - d.industry_share))
-              .attr('y', d => (height - margin.top) / 2)
+              .attr('y', chart.scales.y(0.25))
               .attr('width', d => chart.scales.width(d.industry_share))
               .attr('height', 50)
               .attr('fill', d => chart.scales.color(d.industry_title))
               .attr('stroke', '#FFFFFF')
               .attr('id', d => selector + '-rect-' + d.industry_title)
               .on('mouseover', d => barMouseOver(d)); 
-
-      
-      if (selector === '#bar2') {
-
-        titleText.bar2 = 'Share of jobs by major industry in ' + app.globals.selected.county;
-        console.log(titleText.bar2);
-        
-        newTitle = chart.svg.append('text')
-          .text(titleText.bar2)
-          .attr('class', 'title bar')
-          .attr('transform', 'translate('+ width / 4 + ',0)');
-        oldTitle = chart.svg.select('title bar').exit();
-        currentTitle = chart.svg.merge(newTitle);
-
-      };
-
-        
 
   }
 };
@@ -277,11 +269,11 @@ Controls.prototype = {
   setup: function(dates) {
 
     // Slider designed based on https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
-    sliderWidth = 1100;
+    sliderWidth = 1000;
     sliderHeight = 75;
     margins = { 
       horizontal: 30,
-      vertical: 10,
+      vertical: 30,
     };
 
     label = d3.select('#slider-text')
@@ -292,12 +284,11 @@ Controls.prototype = {
 
     this.selected.year = dates.defaultYear;
     this.selected.month = dates.defaultMonth;
-    console.log('setup called');
 
     sliderTime = d3.sliderBottom()
       .min(dates.min)
       .max(dates.max)
-      .step(1000 * 60 * 60 * 24 * 30)
+      .step(1000 * 60 * 60 * 24 * 30 * 3)
       .width(sliderWidth - 2 * margins.horizontal)
       .tickFormat(d3.timeFormat('%B %Y'))
       // .tickValues(dates.range)
@@ -305,11 +296,11 @@ Controls.prototype = {
       .on('onchange', _.debounce(function () { // 
         val = sliderTime.value();
         d3.select('#slider-label').text(d3.timeFormat('%B %Y')(val));
-        console.log(sliderObject);
+        // console.log(sliderObject);
         sliderObject.selected.year = sliderTime.value().getFullYear();
         sliderObject.selected.month = sliderTime.value().getMonth();
-        app.update()
-      }, 250, { 'maxWait': 1000 }));
+        app.updateTime()
+      }, 200, { 'maxWait': 1000 }));
 
     gTime = d3.select('#slider')
       .append('svg')
@@ -321,8 +312,9 @@ Controls.prototype = {
 
     d3.select('#slider-label').text(d3.timeFormat('%B %Y')(sliderTime.value()));
 
-    gTime.call(sliderTime);
-
+    gTime.call(sliderTime)
+      .selectAll(".tick text")
+      .call(wrap, 50);
 
   },
   
@@ -339,7 +331,7 @@ app = {
   globals: {
       available: {
         dates: {
-          min: new Date(2017, 0),
+          min: new Date(2015, 0),
           max: new Date(2017, 11),
           defaultYear: 2017,
           defaultMonth: 1
@@ -371,6 +363,91 @@ app = {
       .domain([0, maxUrate])
       .range([1, 0]);
       app.colorScale = d => d3.interpolatePlasma(app.urateScale(d));
+    },
+
+    makeBarLegend: function(industries) {
+
+      margin = { top: 50, right: 10, bottom: 10, left: 0 };
+      width = 300;
+      height = 400;
+
+      svg = d3.select("#bar-legend")
+          .append('svg')
+          .attr('width', width + margin.left + margin.right)
+          .attr('height', height + margin.top + margin.bottom)
+          .append('g')
+          .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+  
+      scales = {
+          x: d3.scaleLinear()
+               .domain([0, 1])
+               .range([margin.left, width]),
+          y: d3.scaleLinear()
+              .domain([0, 15])
+              .range([0, height]),
+          color: d3.scaleOrdinal()
+              .domain(industries)
+              .range(d3.schemeCategory10)
+      };
+
+      // const l = d3.range(11).reduce((i) => { industries[industries[i]] = i; return industries;});
+      l = [{industry_name: "Construction", y:0},
+       {industry_name: "Education and health services", y:1},
+       {industry_name: "Financial activities", y:2},
+       {industry_name: "Information", y:3},
+       {industry_name: "Leisure and hospitality", y:4},
+       {industry_name: "Manufacturing", y:5},
+       {industry_name: "Natural resources and mining", y:6},
+       {industry_name: "Other services", y:7},
+       {industry_name: "Professional and business services", y:8},
+       {industry_name: "Trade, transportation, and utilities", y:9}];
+
+      svg.selectAll('text legend title')
+        .append('text')
+        .text('Industries')
+        .attr('x', scales.x(0.1))
+        .attr('y', scales.y(1))
+        .attr('class', 'text legend title');
+
+      svg.selectAll('.rect').data(l)
+        .enter()
+        .append('rect')
+        .attr('x', scales.x(0.1))
+        .attr('y', d => scales.y(d.y) + 3)
+        .attr('width', 15)
+        .attr('height', 15)
+        .attr('fill', d => scales.color(d.industry_name))
+        .attr('class', 'rect legend');
+
+      svg.selectAll('text legend').data(l)
+        .enter()
+        .append('text')
+        .text(d => d.industry_name)
+        .attr('x', scales.x(0.2))
+        .attr('y', d => scales.y(d.y) + 15)
+        .attr('class', 'text legend label');
+    },
+
+    makeReferences: function() {
+
+      margin = { top: 50, right: 10, bottom: 10, left: 10 };
+      width = 1000;
+      height = 400;
+
+      svg = d3.select("#references")
+          .append('svg')
+          .attr('width', width + margin.left + margin.right)
+          .attr('height', height + margin.top + margin.bottom)
+          .append('g')
+          .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      
+      svg.selectAll('text references')
+        .append('text')
+        .text('Data sources: Bureau of Labor Statistics Local Area Unemployment Statistics (LAUS) and Quarterly Census of Employment and Wages (QCEW)')
+        .attr('x', margin.left)
+        .attr('y', margin.top)
+        .attr('class', 'text references');
+
     },
   
     makeTooltip: function() {
@@ -424,7 +501,8 @@ app = {
     clickHandler: function(d) {
       app.globals.selected.stcofips = d.properties.GEOID;
       app.globals.selected.county = app.fips2Name[d.properties.GEOID];
-      app.update();
+      app.updateCounty();
+      console.log(app.globals.selected.stcofips);
     },
 
   initialize: function (data) {
@@ -450,13 +528,16 @@ app = {
       natl_industry: natl_industry,
       cty_industry: cty_industry,
       max_urate: d3.max(urates, p => p.adj_urate),
-      cty_names: cty_names
+      cty_names: cty_names,
+      industries: [ ... new Set(natl_industry.map(x => x.industry_title))]
     };
 
 
     app.components.Controls = new Controls(app.globals.available.dates);
     app.makeTooltip();
     app.makeScales(app.data.max_urate);
+    app.makeBarLegend(app.data.industries);
+    app.makeReferences();
 
     // pull each period into its own sub-array so I can index in 
     // h/t to Cory Rand for mentioning d3.nest as a way to approach this problem
@@ -468,9 +549,9 @@ app = {
                             }, {}))
                             .map(app.data.urates);
 
-    app.globals.available.dates.range = d3.range(110).map(function(d) {
-      return new Date(2007 + Math.floor(d / 10), d % 12, 1);
-    });
+    // app.globals.available.dates.range = d3.range(110).map(function(d) {
+    //   return new Date(2007 + Math.floor(d / 10), d % 12, 1);
+    // });
 
     app.components.Rug = new Rug(app.data.urates, app.data.max_urate);
     app.components.Map = new Map(app.data.shp);
@@ -485,14 +566,15 @@ app = {
       .append('text')
       .text("These charts show how this county's industry mix compares to the national aggregate."); 
 
-    app.components.natlBar = new IndustryBar('#bar1', app.data.natl_industry);
-    app.components.ctyBar = new IndustryBar('#bar2', app.data.cty_industry);
+    app.components.natlBar = new IndustryBar('#bar1', app.data.natl_industry, app.data.industries);
+    
+    app.components.ctyBar = new IndustryBar('#bar2', app.data.cty_industry, app.data.industries);
 
-    app.update();
+    app.updateTime();
 
   },
 
-  update: function () {
+  updateTime: function () {
     // to do: segment this function into time and place
 
     selected = app.components.Controls.getDate();
@@ -509,6 +591,10 @@ app = {
     app.components.ctyBar.update('#bar2', app.data.cty_industry)
 
 
+  },
+
+  updateCounty: function() {
+    app.components.ctyBar.update('#bar2', app.data.cty_industry)
   }
 
 }

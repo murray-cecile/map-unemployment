@@ -72,7 +72,9 @@ adj_cturate %>% select(year, month, periodName, stfips, stcofips, adj_urate) %>%
   write_json_there("adj-county-urate_2007-2018.json")
 
 adj_cturate %>% select(year, month, periodName, stfips, stcofips, adj_urate) %>% 
-  filter(year == 2017) %>% write_json_there("adj-urate-2017.json")
+  filter(between(year, 2015, 2017),
+         month %in% c("01", "04", "07", "12")) %>%
+  write_json_there("adj-urate-2015-2017.json")
 
 #===============================================================================#
 # QCEW API
@@ -107,6 +109,7 @@ load("temp/qcew_dat.Rdata")
 natl_shares <- dat %>% select(industry_code, year, annual_avg_emplvl) %>% 
   mutate(industry_code = as.character(industry_code)) %>% 
   left_join(qcew_naics, by="industry_code") %>% 
+  filter(industry_code != 1029) %>% 
   group_by(industry_code, industry_title, year) %>%
   summarize_all(sum, na.rm=TRUE) %>% 
   mutate(totemp = ifelse(industry_code == "10",
@@ -124,12 +127,19 @@ natl_shares %>% select(year, industry_title, industry_share, cshare) %>%
 # COUNTY EMPLOYMENT BY INDUSTRY
 #===============================================================================#
 
+qcew_tot <- dat %>% select(area_fips, industry_code, year, annual_avg_emplvl) %>% 
+  dplyr::rename(stcofips = area_fips) %>% 
+  mutate(industry_code = as.character(industry_code)) %>% 
+  filter(!industry_code %in% c("10", "1029")) %>% select(-industry_code) %>% 
+  group_by(stcofips, year) %>% summarize_all(sum, na.rm = TRUE) %>% 
+  dplyr::rename(totemp = annual_avg_emplvl)
+
 qcew <- dat %>% select(area_fips, industry_code, year, annual_avg_emplvl) %>% 
   dplyr::rename(stcofips = area_fips) %>% 
   mutate(industry_code = as.character(industry_code)) %>% 
   left_join(qcew_naics, by="industry_code") %>% 
-  mutate(totemp = ifelse(industry_code == "10", annual_avg_emplvl, NA)) %>% 
-  arrange(stcofips, year, industry_code) %>% fill(totemp) %>% 
+  filter(industry_code != "1029") %>%
+  left_join(qcew_tot, by = c("stcofips", "year")) %>% 
   mutate(industry_share = ifelse(totemp > 0, annual_avg_emplvl / totemp, 0)) %>% 
   filter(industry_title != "Total, all industries") %>%
   arrange(stcofips, year, industry_title) %>%
@@ -138,7 +148,3 @@ qcew <- dat %>% select(area_fips, industry_code, year, annual_avg_emplvl) %>%
 qcew %>% select(stcofips, year, industry_title, industry_share, cshare) %>% 
   filter(year == 2017) %>% 
   write_json_there('qcew-2017.json')
-
-# oh <- qcew %>% filter(industry_code != 10, year == 2017, substr(stcofips, 1, 2) == "39") %>%
-#   write_json_there("qcew-oh17.json")
-

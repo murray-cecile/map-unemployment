@@ -15,9 +15,14 @@ ctpop <- get_acs(geography = "county", variable = "B01001_001",
 counties <- ctpop %>% select(-variable, -pop)
 simplified <- ms_simplify(counties, keep_shapes = TRUE) %>%
   st_as_sf() %>%
-  st_transform(2163)
+  st_transform(4326)
 
 setwd("~/Documents/CAPP/data-viz/map-unemployment/data")
 
 sf::st_write(simplified, "simple_us_counties.geojson", delete_dsn=TRUE)
-sf::st_write(counties, "counties2.geojson")
+# sf::st_write(counties, "counties2.geojson")
+
+
+ggplot(simplified, aes(fill = "#FFA220")) +
+  geom_sf() +
+  coord_sf()
