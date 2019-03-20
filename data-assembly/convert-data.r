@@ -73,7 +73,7 @@ adj_cturate %>% select(year, month, periodName, stfips, stcofips, adj_urate) %>%
 
 adj_cturate %>% select(year, month, periodName, stfips, stcofips, adj_urate) %>% 
   filter(between(year, 2015, 2017),
-         month %in% c("01", "04", "07", "12")) %>%
+         month %in% c("01", "04", "07", "10")) %>%
   write_json_there("adj-urate-2015-2017.json")
 
 #===============================================================================#
@@ -146,5 +146,5 @@ qcew <- dat %>% select(area_fips, industry_code, year, annual_avg_emplvl) %>%
   group_by(stcofips, year) %>% mutate(cshare = cumsum(industry_share)) 
 
 qcew %>% select(stcofips, year, industry_title, industry_share, cshare) %>% 
-  filter(year == 2017) %>% 
-  write_json_there('qcew-2017.json')
+  # filter(year == 2017) %>% 
+  write_json_there('qcew-2015-2017.json')
