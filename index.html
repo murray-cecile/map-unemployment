@@ -11,8 +11,7 @@
 <body>
   <script src="https://d3js.org/d3.v5.js"></script>
   <script src="https://unpkg.com/d3-simple-slider"></script>
-  <script src="https://d3js.org/d3-dispatch.v1.min.js"></script>
-  <script src="https://d3js.org/d3-drag.v1.min.js"></script>
+  <script src="https://d3js.org/d3-time.v1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.4/lodash.min.js"></script>
   <script src="script.js"></script>
   <h2>Mapping U.S. Unemployment</h2>
@@ -40,7 +39,11 @@
       <div id='bar1'></div>
       <div id='bar-legend'></div>
     </div>
-    <div id='references'></div>
+    <div id='references'>
+      <p id='data-source'></p>
+      <p id='author'></p>
+      <p id='github'></p>
+    </div>
   </div>
   <div id='loading'>Data are loading - this will take some time.</div>
 </body>

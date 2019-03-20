@@ -1,8 +1,6 @@
 // CECILE MURRAY
 // References at the bottom
 
-// var drag = d3.drag();
-
   // RUG
 Rug = function(urates, maxUrate) {
   this.makeRug(urates, maxUrate);
@@ -232,7 +230,7 @@ IndustryBar.prototype = {
           .append('text')
           .text(d.industry_title)
           .attr('class', 'tooltip');
-        app.showTooltip(d.industry_title + ', ' + d.industry_share * 100 + '%');
+        app.showTooltip(d.industry_title + ', ' + d3.format('0.0%')(d.industry_share));
       };
 
       bars = chart.svg.selectAll(selector + ' rect')
@@ -270,7 +268,7 @@ Controls.prototype = {
 
     // Slider designed based on https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
     sliderWidth = 1000;
-    sliderHeight = 75;
+    sliderHeight = 100;
     margins = { 
       horizontal: 30,
       vertical: 30,
@@ -285,18 +283,18 @@ Controls.prototype = {
     this.selected.year = dates.defaultYear;
     this.selected.month = dates.defaultMonth;
 
-    sliderTime = d3.sliderBottom()
-      .min(dates.min)
-      .max(dates.max)
-      .step(1000 * 60 * 60 * 24 * 30 * 3)
-      .width(sliderWidth - 2 * margins.horizontal)
+    timeScale = d3.scaleTime()
+                  .domain([dates.min, dates.max])
+                  .range([margins.horizontal, sliderWidth]);
+
+    sliderTime = d3.sliderBottom(timeScale)
       .tickFormat(d3.timeFormat('%B %Y'))
-      // .tickValues(dates.range)
+      .tickValues(dates.range)
       .default(new Date(dates.defaultYear, dates.defaultMonth))
-      .on('onchange', _.debounce(function () { // 
-        val = sliderTime.value();
-        d3.select('#slider-label').text(d3.timeFormat('%B %Y')(val));
-        // console.log(sliderObject);
+      .marks(dates.range)
+      .on('onchange', _.debounce(function () { 
+        console.log(d3.select('#slider-label'));
+        d3.select('#slider-label').text(d3.timeFormat('%B %Y')(sliderTime.value()));
         sliderObject.selected.year = sliderTime.value().getFullYear();
         sliderObject.selected.month = sliderTime.value().getMonth();
         app.updateTime()
@@ -304,17 +302,19 @@ Controls.prototype = {
 
     gTime = d3.select('#slider')
       .append('svg')
-      .attr('width', sliderWidth)
+      .attr('width', sliderWidth + 2 * margins.horizontal)
       .attr('height', sliderHeight)
       .append('g')
       .attr('class', 'slider')
       .attr('transform', 'translate(' + margins.horizontal + ',' + margins.vertical + ')');
 
-    d3.select('#slider-label').text(d3.timeFormat('%B %Y')(sliderTime.value()));
+    d3.select('#slider-label')
+      .text(d3.timeFormat('%B %Y')(sliderTime.value()))
+      .attr('transform', 'translate(' + margins.horizontal / 2 + ',' + margins.vertical / 2 + ')');
 
-    gTime.call(sliderTime)
-      .selectAll(".tick text")
-      .call(wrap, 50);
+    gTime.call(sliderTime);
+      // .selectAll(".tick text")
+      // .call(wrap, 50);
 
   },
   
@@ -332,9 +332,9 @@ app = {
       available: {
         dates: {
           min: new Date(2015, 0),
-          max: new Date(2017, 11),
-          defaultYear: 2017,
-          defaultMonth: 1
+          max: new Date(2017, 12),
+          defaultYear: 2015,
+          defaultMonth: 3
         }
       },
       selected: { 
@@ -351,9 +351,9 @@ app = {
     colorScale: '',
 
     setInitialValues: function () {
-      app.globals.selected.date = '2017-02';
-      app.globals.selected.year = 2017;
-      app.globals.selected.month = 1;
+      app.globals.selected.date = '2015-01';
+      app.globals.selected.year = 2015;
+      app.globals.selected.month = 0;
       app.globals.selected.stcofips = '39035';
       app.globals.selected.county = 'Cuyahoga County, Ohio';
     },
@@ -369,7 +369,7 @@ app = {
 
       margin = { top: 50, right: 10, bottom: 10, left: 0 };
       width = 300;
-      height = 400;
+      height = 300;
 
       svg = d3.select("#bar-legend")
           .append('svg')
@@ -430,23 +430,21 @@ app = {
 
     makeReferences: function() {
 
-      margin = { top: 50, right: 10, bottom: 10, left: 10 };
-      width = 1000;
-      height = 400;
-
-      svg = d3.select("#references")
-          .append('svg')
-          .attr('width', width + margin.left + margin.right)
-          .attr('height', height + margin.top + margin.bottom)
-          .append('g')
-          .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-      
-      svg.selectAll('text references')
-        .append('text')
+          
+      d3.select('#data-source')
         .text('Data sources: Bureau of Labor Statistics Local Area Unemployment Statistics (LAUS) and Quarterly Census of Employment and Wages (QCEW)')
-        .attr('x', margin.left)
-        .attr('y', margin.top)
-        .attr('class', 'text references');
+        .on('click', function() {window.location = "https://www.bls.gov/data/"})
+        .attr('class', 'link');
+
+      d3.select('#github')
+        .text("Check out the Github repo for this project here.")
+        .on("click", function() {window.location = "https://github.com/murray-cecile/map-unemployment"})
+        .attr('class', 'link');
+        
+      d3.select('#author')
+        .text("Author: Cecile Murray")
+        .on("click", function() {window.location = "https://github.com/murray-cecile"})
+        .attr('class', 'link');
 
     },
   
@@ -532,12 +530,11 @@ app = {
       industries: [ ... new Set(natl_industry.map(x => x.industry_title))]
     };
 
-
+    app.globals.available.dates.range = d3.timeMonth.range(app.globals.available.dates.min, app.globals.available.dates.max, 3);
     app.components.Controls = new Controls(app.globals.available.dates);
     app.makeTooltip();
     app.makeScales(app.data.max_urate);
     app.makeBarLegend(app.data.industries);
-    app.makeReferences();
 
     // pull each period into its own sub-array so I can index in 
     // h/t to Cory Rand for mentioning d3.nest as a way to approach this problem
@@ -548,10 +545,9 @@ app = {
                               return acc;
                             }, {}))
                             .map(app.data.urates);
+    // console.log(app.data.uratesYear);
 
-    // app.globals.available.dates.range = d3.range(110).map(function(d) {
-    //   return new Date(2007 + Math.floor(d / 10), d % 12, 1);
-    // });
+    // console.log(app.globals.available.dates.range);
 
     app.components.Rug = new Rug(app.data.urates, app.data.max_urate);
     app.components.Map = new Map(app.data.shp);
@@ -562,23 +558,22 @@ app = {
       return acc;
     }, {});
 
-    barCaption = d3.select('#bar-text')
+    d3.select('#bar-text')
       .append('text')
-      .text("These charts show how this county's industry mix compares to the national aggregate."); 
+      .text("These charts show which industries are the biggest employers in this county compared with what share of jobs those industries make up in the nation as a whole."); 
+  
 
     app.components.natlBar = new IndustryBar('#bar1', app.data.natl_industry, app.data.industries);
-    
     app.components.ctyBar = new IndustryBar('#bar2', app.data.cty_industry, app.data.industries);
+    app.makeReferences();
 
     app.updateTime();
 
   },
 
   updateTime: function () {
-    // to do: segment this function into time and place
 
     selected = app.components.Controls.getDate();
-    console.log(selected);
     app.globals.selected.year = selected.year;
     app.globals.selected.month = selected.month;
     app.globals.selected.date = selected.year + '-' + '0' * (selected.month + 1 < 10) + (selected.month + 1);
@@ -603,9 +598,9 @@ app = {
 // DATA LOADING
 Promise.all([
   './data/us_counties.geojson',
-  './data/adj-urate-2017.json',
+  './data/adj-urate-2015-2017.json',
   './data/national_industry_shares_07-18.json',
-  './data/qcew-2017.json',
+  './data/qcew-2015-2017.json',
   './data/county_names.json'].map(url => fetch(url)
   .then(data => data.json())))
   .then(data => app.initialize(data));
