@@ -435,17 +435,46 @@ app = {
         .text('Data sources: Bureau of Labor Statistics Local Area Unemployment Statistics (LAUS) and Quarterly Census of Employment and Wages (QCEW)')
         .on('click', function() {window.location = "https://www.bls.gov/data/"})
         .attr('class', 'link');
-
-      d3.select('#github')
-        .text("Check out the Github repo for this project here.")
-        .on("click", function() {window.location = "https://github.com/murray-cecile/map-unemployment"})
-        .attr('class', 'link');
-        
+      
+      d3.select('#blscraper')
+      .text('I used the excellent blscrapeR R package to assemble these data, as well as tidycensus, sf, and rmapshaper to manipulate shapefiles.')
+      .on('click', function() {window.location = "https://github.com/keberwein/blscrapeR"})
+      .attr('class', 'link');
+    
       d3.select('#author')
         .text("Author: Cecile Murray")
         .on("click", function() {window.location = "https://github.com/murray-cecile"})
         .attr('class', 'link');
 
+      d3.select('#github')
+        .text("You can find the Github repo for this project here.")
+        .on("click", function() {window.location = "https://github.com/murray-cecile/map-unemployment"})
+        .attr('class', 'link');
+
+      d3.select('#block1')
+        .text("I also drew on the following resources:")
+        .attr('class', 'inspiration');
+
+      d3.select('#block2')
+        .text("This gap-reminder viz by Chris Given, as explained by Alex Engler")
+        .on("click", function() {window.location = "https://github.com/cmgiven/gap-reminder-v4"})
+        .attr('class', 'link');
+      
+      d3.select('#block3')
+        .text("These exercises developed by Andrew McNutt.")
+        .on("click", function() {window.location = "https://github.com/mcnuttandrew/capp-30239"})
+        .attr('class', 'link');
+
+      d3.select('#block4')
+        .text("This block initially got my map up and running.")
+        .on("click", function() {window.location = "https://github.com/ivan-ha/d3-hk-map/blob/development/map.js"})
+        .attr('class', 'link');
+      
+      d3.select('#block5')
+        .text("Finally, I created my tooltip function based on this block.")
+        .on("click", function() {window.location = "https://bl.ocks.org/tiffylou/88f58da4599c9b95232f5c89a6321992"})
+        .attr('class', 'link');
+      
     },
   
     makeTooltip: function() {

@@ -64,6 +64,11 @@
 
   .link {
     color: blue;
+    font-size: x-small;
+  }
+
+  .inspiration {
+    font-size: x-small;
   }
 
  /* RUG CHARTS */
